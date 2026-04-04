@@ -665,12 +665,10 @@ router.get("/", verifyToken, async (req, res) => {
   try {
     const spId = req.user.spId || req.user.userId;
     if (!spId)
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Service provider ID not found in token",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Service provider ID not found in token",
+      });
 
     const services = await Service.find({ serviceProviderId: spId }).sort({
       createdAt: -1,
@@ -733,13 +731,11 @@ router.post("/", verifyToken, async (req, res) => {
 
     if (!serviceName || !price || !unit || !serviceType) {
       console.log("❌ Validation failed: Missing required fields");
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message:
-            "Missing required fields: serviceName, price, unit, serviceType",
-        });
+      return res.status(400).json({
+        success: false,
+        message:
+          "Missing required fields: serviceName, price, unit, serviceType",
+      });
     }
 
     // ─── VALIDATE SERVICE NAME ────────────────────────────────────────────
@@ -892,7 +888,9 @@ router.post("/", verifyToken, async (req, res) => {
       serviceData.expertise = sanitizeString(expertise) || "";
       serviceData.experience = sanitizeString(experience) || "";
       serviceData.servicesOffered = Array.isArray(servicesOffered)
-        ? servicesOffered.map((s) => sanitizeString(s)).filter((s) => s.length > 0)
+        ? servicesOffered
+            .map((s) => sanitizeString(s))
+            .filter((s) => s.length > 0)
         : [];
     }
 
@@ -943,12 +941,10 @@ router.put("/:id", verifyToken, async (req, res) => {
 
     const spId = req.user.spId || req.user.userId;
     if (service.serviceProviderId.toString() !== spId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to update this service",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this service",
+      });
     }
 
     // ─── VALIDATE AND SANITIZE UPDATES ────────────────────────────────────
@@ -1025,8 +1021,13 @@ router.put("/:id", verifyToken, async (req, res) => {
       updateData.address = sanitizeString(updateData.address);
     }
 
-    if (updateData.servicesOffered && Array.isArray(updateData.servicesOffered)) {
-      updateData.servicesOffered = updateData.servicesOffered.map((s) => sanitizeString(s)).filter((s) => s.length > 0);
+    if (
+      updateData.servicesOffered &&
+      Array.isArray(updateData.servicesOffered)
+    ) {
+      updateData.servicesOffered = updateData.servicesOffered
+        .map((s) => sanitizeString(s))
+        .filter((s) => s.length > 0);
     }
 
     if (updateData.expertise) {
@@ -1036,17 +1037,17 @@ router.put("/:id", verifyToken, async (req, res) => {
     if (updateData.experience) {
       updateData.experience = sanitizeString(updateData.experience);
     }
+
+    const updatedService = await Service.findByIdAndUpdate(
       id,
       { ...updateData, updatedAt: Date.now() },
       { new: true, runValidators: true },
     );
-    res
-      .status(200)
-      .json({
-        success: true,
-        message: "Service updated successfully",
-        service: updatedService,
-      });
+    res.status(200).json({
+      success: true,
+      message: "Service updated successfully",
+      service: updatedService,
+    });
   } catch (error) {
     console.error("Update service error:", error);
     res
@@ -1067,12 +1068,10 @@ router.delete("/:id", verifyToken, async (req, res) => {
 
     const spId = req.user.spId || req.user.userId;
     if (service.serviceProviderId.toString() !== spId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to delete this service",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this service",
+      });
     }
 
     await Service.findByIdAndDelete(id);
