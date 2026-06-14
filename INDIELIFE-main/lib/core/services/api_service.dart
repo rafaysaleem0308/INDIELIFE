@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hello/core/services/session_manager.dart';
 import 'dart:io';
+import 'dart:async';
 
 // ─── RESPONSE VALIDATION CLASS ─────────────────────────────────────────────
 class ApiResponse {
@@ -50,11 +51,9 @@ class ApiService {
     if (Platform.isAndroid) {
       // Android Emulator: 10.0.2.2 = host's localhost
       return "http://10.0.2.2:3000";
-      // For physical device on same network, use:
-      // return "http://192.168.x.x:3000"; // Replace with your machine's local IP
     }
-    return "http://127.0.0.1:3000";
-  } // Local development (iOS)
+    return "http://localhost:3000";
+  } // Local development
   // static const String baseUrl = "https://your-production-api.com"; // Production
 
   // ================================
@@ -430,13 +429,18 @@ class ApiService {
   ) async {
     try {
       print("🔐 Attempting login for: $email");
+      final normalizedEmail = email
+          .toLowerCase()
+          .trim(); // Normalize email before sending
 
       // First, try user login
-      final userResponse = await http.post(
-        Uri.parse('$baseUrl/signup/user/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
-      );
+      final userResponse = await http
+          .post(
+            Uri.parse('$baseUrl/signup/user/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'email': normalizedEmail, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       print("👤 User login status: ${userResponse.statusCode}");
       print("👤 User login body: ${userResponse.body}");
@@ -444,7 +448,8 @@ class ApiService {
       if (userResponse.statusCode == 200) {
         final userData = json.decode(userResponse.body);
         if (userData['success'] == true) {
-          await _saveToken(userData['token']);
+          final token = userData['token'] ?? userData['accessToken'];
+          if (token != null) await _saveToken(token);
           await saveUserSession(userData['user']);
 
           // Save to SessionManager (new secure storage)
@@ -470,11 +475,13 @@ class ApiService {
       }
 
       // If user login fails, try service provider login
-      final spResponse = await http.post(
-        Uri.parse('$baseUrl/signup/service-provider/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
-      );
+      final spResponse = await http
+          .post(
+            Uri.parse('$baseUrl/signup/service-provider/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({'email': normalizedEmail, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 10));
 
       print("🏢 Service provider login status: ${spResponse.statusCode}");
       print("🏢 Service provider login body: ${spResponse.body}");
@@ -482,7 +489,8 @@ class ApiService {
       if (spResponse.statusCode == 200) {
         final spData = json.decode(spResponse.body);
         if (spData['success'] == true) {
-          await _saveToken(spData['token']);
+          final token = spData['token'] ?? spData['accessToken'];
+          if (token != null) await _saveToken(token);
           await saveUserSession(spData['user']);
 
           // Save to SessionManager (new secure storage)
@@ -532,11 +540,26 @@ class ApiService {
       print("❌ Both login attempts failed");
       return {'success': false, 'message': 'Invalid email or password'};
     } catch (error) {
-      print("🔥 Login error: $error");
-      return {
-        'success': false,
-        'message': 'Network error: Please check your connection: $error',
-      };
+      print("🔥 Login error detail: $error");
+
+      String errorMessage = 'An unexpected error occurred. Please try again.';
+
+      // Check for network-related strings in the error message
+      final errorString = error.toString();
+      if (errorString.contains('SocketException') ||
+          errorString.contains('No route to host') ||
+          errorString.contains('Connection refused')) {
+        errorMessage =
+            'Network Error: Cannot reach the server.\n\n'
+            '• Ensure phone & PC are on the same Wi-Fi\n'
+            '• Check if Windows Firewall allows port 3000\n'
+            '• For Emulator: use 10.0.2.2. For physical: use your machine\'s IPv4';
+      } else if (error is TimeoutException) {
+        errorMessage =
+            'Connection timed out. The server is taking too long to respond.';
+      }
+
+      return {'success': false, 'message': errorMessage};
     }
   }
   // ================================
@@ -3503,7 +3526,7 @@ class ApiService {
         body: json.encode({
           'itemId': itemId,
           'quantity': quantity,
-          'instructions': ?instructions,
+          'instructions': instructions,
         }),
       );
 

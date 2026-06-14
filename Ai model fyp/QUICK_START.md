@@ -17,8 +17,8 @@ The AI Expense Planner has been **successfully migrated from web (index.html) to
 ### **Step 1: Start the Flask Backend**
 
 ```bash
-# Navigate to the AI model folder
-cd "d:\Semester 8\Ai model fyp"
+# Navigate to the AI model folder (Updated for your current path)
+cd "d:\WORK DATA\Semester 8\Indielife\Ai model fyp"
 
 # Activate virtual environment
 .venv\Scripts\activate
@@ -42,8 +42,8 @@ python app.py
 ### **Step 2: Run Flutter Application**
 
 ```bash
-# Navigate to Flutter project
-cd "d:\Semester 8\INDIELIFE-main"
+# Navigate to Flutter project (Updated for your current path)
+cd "d:\WORK DATA\Semester 8\Indielife\INDIELIFE-main"
 
 # Run the app
 flutter run
@@ -194,9 +194,8 @@ Edit `ai_budget_service.dart`:
 
 ```dart
 if (Platform.isAndroid) {
-  return "http://10.0.2.2:5000";  // Android Emulator localhost
-  // Or for physical device on same network:
-  // return "http://192.168.x.x:5000";  // Replace with your PC IP
+  // Use 10.0.2.2 for Android Emulator, or your machine's IPv4 for physical devices
+  return "http://10.0.2.2:5000";
 }
 ```
 

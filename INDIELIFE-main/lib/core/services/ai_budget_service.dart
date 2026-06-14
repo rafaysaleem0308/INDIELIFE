@@ -10,10 +10,9 @@ class AIBudgetService {
     if (Platform.isAndroid) {
       // Android Emulator: 10.0.2.2 = host's localhost
       return "http://10.0.2.2:5000";
-      // For physical device on same network, use:
-      // return "http://192.168.x.x:5000"; // Replace with your machine's local IP
     }
-    return "http://127.0.0.1:5000";
+    // Fallback for iOS Simulator or Desktop (localhost)
+    return "http://localhost:5000";
   }
 
   /// Get AI budget recommendation based on budget, days, and category
@@ -36,7 +35,9 @@ class AIBudgetService {
               'category': category,
             }),
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(
+            const Duration(seconds: 60),
+          ); // Increased for large Kaggle datasets
 
       debugPrint('Response Status: ${response.statusCode}');
       debugPrint('Response Body: ${response.body}');
@@ -109,7 +110,7 @@ class AIBudgetService {
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode({'text': text}),
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 60));
 
       debugPrint('Response Status: ${response.statusCode}');
 
@@ -163,7 +164,7 @@ class AIBudgetService {
             Uri.parse('$flaskBaseUrl/api/datasets/$category'),
             headers: {'Content-Type': 'application/json'},
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
@@ -195,7 +196,9 @@ class AIBudgetService {
             Uri.parse('$flaskBaseUrl/api/stats'),
             headers: {'Content-Type': 'application/json'},
           )
-          .timeout(const Duration(seconds: 30));
+          .timeout(
+            const Duration(seconds: 60),
+          ); // Increased timeout for heavy data
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);

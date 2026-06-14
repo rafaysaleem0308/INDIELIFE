@@ -145,6 +145,15 @@ KAGGLE_DATASETS = {
         'key_columns': {'item': 'cmname', 'price': 'price'},
         'currency': 'USD',
     },
+    # NEW: Adding a second meal dataset as requested.
+    # Replace with an actual Kaggle dataset if available, or a local CSV path.
+    'indian-food-prices-dataset': {
+        'category': 'meal',
+        'name': 'Indian Food Prices (Hypothetical)',
+        'link': 'https://www.kaggle.com/datasets/example/indian-food-prices', # Placeholder link
+        'key_columns': {'item': 'item_name', 'price': 'price_inr'}, # Adjust column names as per actual dataset
+        'currency': 'INR',
+    },
     'mohamedharris/supermart-grocery-sales-retail-analytics-dataset': {
         'category': 'laundry',
         'name': 'Supermart Grocery Sales',

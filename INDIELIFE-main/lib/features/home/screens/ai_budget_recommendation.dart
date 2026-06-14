@@ -23,6 +23,37 @@ class _C {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  UTF-16 SAFE HELPERS
+//  Dart strings are UTF-16. Emoji and many Unicode characters outside the Basic
+//  Multilingual Plane occupy TWO code units (a surrogate pair). Slicing a
+//  string at an odd code-unit index that lands *inside* a surrogate pair
+//  produces an ill-formed UTF-16 string, which Flutter's text engine rejects
+//  with "string is not well-formed UTF-16".
+//
+//  _safeSubstring  – like substring() but snaps the end index forward past any
+//                    dangling lead surrogate so the result is always well-formed.
+//  _runeLength     – number of Unicode scalar values (runes) in a string, used
+//                    to drive the typewriter tick count.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Returns `s.substring(0, end)` but advances `end` by 1 if it would split a
+/// surrogate pair (lead surrogate U+D800–U+DBFF at position end-1).
+String _safeSubstring(String s, int end) {
+  if (end <= 0) return '';
+  if (end >= s.length) return s;
+  // If the code unit just before `end` is a lead surrogate, include its
+  // trailing surrogate as well so the string stays well-formed.
+  final cu = s.codeUnitAt(end - 1);
+  if (cu >= 0xD800 && cu <= 0xDBFF && end < s.length) {
+    return s.substring(0, end + 1);
+  }
+  return s.substring(0, end);
+}
+
+/// Number of Unicode scalar values (runes) in [s].
+int _runeCount(String s) => s.runes.length;
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  BOLD MARKDOWN PARSER
 // ─────────────────────────────────────────────────────────────────────────────
 List<TextSpan> _buildFormattedSpans(String text, TextStyle base) {
@@ -67,17 +98,20 @@ class ChatMessage {
   final _MsgType type;
   final List<_Section> sections;
 
-  const ChatMessage({
+  // Stable identity key — assigned once when the message is created.
+  final UniqueKey stableKey;
+
+  ChatMessage({
     required this.role,
     required this.content,
     this.isTyping = false,
     this.type = _MsgType.normal,
     this.sections = const [],
-  });
+  }) : stableKey = UniqueKey();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  TYPEWRITER WIDGET  — onDone fires when the last character has printed
+//  TYPEWRITER WIDGET
 // ─────────────────────────────────────────────────────────────────────────────
 class TypingText extends StatefulWidget {
   final String text;
@@ -104,18 +138,27 @@ class _TypingTextState extends State<TypingText> {
   @override
   void initState() {
     super.initState();
-    int idx = 0;
+    // Pre-compute rune-boundary end-indices so the timer never slices inside
+    // a surrogate pair (which would cause "string is not well-formed UTF-16").
+    final boundaries = <int>[];
+    int pos = 0;
+    for (final rune in widget.text.runes) {
+      pos += rune > 0xFFFF ? 2 : 1;
+      boundaries.add(pos);
+    }
+    int tick = 0;
     _timer = Timer.periodic(Duration(milliseconds: widget.msPerChar), (t) {
       if (!mounted) {
         t.cancel();
         return;
       }
-      if (idx >= widget.text.length) {
+      if (tick >= boundaries.length) {
         t.cancel();
         widget.onDone?.call();
         return;
       }
-      setState(() => _shown = widget.text.substring(0, ++idx));
+      final end = boundaries[tick++];
+      setState(() => _shown = widget.text.substring(0, end));
     });
   }
 
@@ -130,12 +173,13 @@ class _TypingTextState extends State<TypingText> {
     final base =
         widget.baseStyle ??
         GoogleFonts.inter(fontSize: 14, color: _C.text, height: 1.55);
+    final isDone = _shown.length >= widget.text.length;
     return RichText(
       text: TextSpan(
         style: base,
         children: [
           ..._buildFormattedSpans(_shown, base),
-          if (_shown.length < widget.text.length)
+          if (!isDone)
             TextSpan(
               text: '▋',
               style: TextStyle(color: _C.primary, fontWeight: FontWeight.bold),
@@ -147,24 +191,30 @@ class _TypingTextState extends State<TypingText> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  COMBINED BUBBLE — StatefulWidget that types each section sequentially
+//  COMBINED BUBBLE — types each section sequentially
+//  Uses AutomaticKeepAliveClientMixin to survive list scroll recycling.
 // ─────────────────────────────────────────────────────────────────────────────
 class _CombinedBubble extends StatefulWidget {
   final List<_Section> sections;
   final double maxWidth;
 
-  const _CombinedBubble({required this.sections, required this.maxWidth});
+  const _CombinedBubble({
+    super.key,
+    required this.sections,
+    required this.maxWidth,
+  });
 
   @override
   State<_CombinedBubble> createState() => _CombinedBubbleState();
 }
 
-class _CombinedBubbleState extends State<_CombinedBubble> {
-  // How many sections are currently visible (starts at 1 so the first section
-  // starts typing immediately; grows by 1 each time a section finishes).
-  int _visible = 1;
+class _CombinedBubbleState extends State<_CombinedBubble>
+    with AutomaticKeepAliveClientMixin {
+  // Keeps this widget alive even when scrolled off-screen.
+  @override
+  bool get wantKeepAlive => true;
 
-  // The section currently being typed is always the last visible one.
+  int _visible = 1;
   int get _typingIdx => _visible - 1;
 
   void _onSectionDone() {
@@ -178,6 +228,7 @@ class _CombinedBubbleState extends State<_CombinedBubble> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Container(
       constraints: BoxConstraints(maxWidth: widget.maxWidth),
       margin: const EdgeInsets.only(bottom: 14),
@@ -217,7 +268,6 @@ class _CombinedBubbleState extends State<_CombinedBubble> {
                         duration: 240.ms,
                         curve: Curves.easeOut,
                       ),
-                  // Show divider only when the NEXT section is already visible
                   if (i < _visible - 1 && i < widget.sections.length - 1)
                     _divider(widget.sections[i + 1].kind),
                 ],
@@ -294,7 +344,7 @@ class _CombinedBubbleState extends State<_CombinedBubble> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  SECTION TILE — renders one section as typing (active) or static (done)
+//  SECTION TILE
 // ─────────────────────────────────────────────────────────────────────────────
 class _SectionTile extends StatelessWidget {
   final _Section section;
@@ -320,7 +370,6 @@ class _SectionTile extends StatelessWidget {
     }
   }
 
-  // ── Plain ─────────────────────────────────────────────────────────────────
   Widget _plain() {
     final base = GoogleFonts.inter(fontSize: 14, height: 1.55, color: _C.text);
     return isTyping
@@ -338,7 +387,6 @@ class _SectionTile extends StatelessWidget {
           );
   }
 
-  // ── Calculation ───────────────────────────────────────────────────────────
   Widget _calc() {
     final base = GoogleFonts.sourceCodePro(
       fontSize: 12.5,
@@ -349,10 +397,14 @@ class _SectionTile extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          width: double.infinity,
           decoration: BoxDecoration(
-            color: _C.primary.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(8),
+            color: _C.text.withOpacity(0.04),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+            border: Border(
+              bottom: BorderSide(color: _C.border.withOpacity(0.5)),
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -375,25 +427,33 @@ class _SectionTile extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 10),
-        isTyping
-            ? TypingText(
-                text: section.content,
-                msPerChar: 14,
-                baseStyle: base,
-                onDone: onDone,
-              )
-            : RichText(
-                text: TextSpan(
-                  style: base,
-                  children: _buildFormattedSpans(section.content, base),
+        Container(
+          padding: const EdgeInsets.all(12),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: _C.calcBg.withOpacity(0.5),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(10),
+            ),
+          ),
+          child: isTyping
+              ? TypingText(
+                  text: section.content,
+                  msPerChar: 14,
+                  baseStyle: base,
+                  onDone: onDone,
+                )
+              : RichText(
+                  text: TextSpan(
+                    style: base,
+                    children: _buildFormattedSpans(section.content, base),
+                  ),
                 ),
-              ),
+        ),
       ],
     );
   }
 
-  // ── Tip ───────────────────────────────────────────────────────────────────
   Widget _tip() {
     final base = GoogleFonts.inter(fontSize: 13.5, height: 1.6, color: _C.text);
     return Container(
@@ -438,6 +498,30 @@ class _SectionTile extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  KEEP-ALIVE WRAPPER
+//  Wraps any widget so it survives ListView scroll recycling.
+// ─────────────────────────────────────────────────────────────────────────────
+class _KeepAliveItem extends StatefulWidget {
+  final Widget child;
+  const _KeepAliveItem({required this.child});
+
+  @override
+  State<_KeepAliveItem> createState() => _KeepAliveItemState();
+}
+
+class _KeepAliveItemState extends State<_KeepAliveItem>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
 
@@ -489,17 +573,17 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
 
   void _addIntroMessages() {
     _messages.add(
-      const ChatMessage(
+      ChatMessage(
         role: 'assistant',
         type: _MsgType.guide,
         content:
             '**👋 Welcome to AI Budget Assistant**\n\n'
-            'Tell me your budget in one message and I will generate a complete PKR spending plan with step-by-step calculations.\n\n'
+            'Write your request in simple English and I will build a plan for you.\n\n'
             '**Supported areas:**  Meals · Laundry · Maintenance\n\n'
-            '**Try these examples:**\n'
-            '• I have 7 000 PKR for 14 days for meals\n'
-            '• Plan my laundry budget: 2 500 PKR for 10 days\n'
-            '• I need maintenance planning for 1 month with 12 000 PKR',
+            '**Try typing like this:**\n'
+            '• "5000 for 10 days for food"\n'
+            '• "need laundry plan for 2 weeks budget 3000"\n'
+            '• "12000 for 1 month home maintenance"',
       ),
     );
   }
@@ -569,7 +653,7 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
       _stepIndex = 0;
       _showStep = true;
       _messages.add(
-        const ChatMessage(role: 'assistant', content: '', isTyping: true),
+        ChatMessage(role: 'assistant', content: '', isTyping: true),
       );
     });
     _scroll();
@@ -636,7 +720,6 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
 
         await _advanceStep(4);
 
-        // ── One combined bubble — sections type out one after another ─────
         _push(
           ChatMessage(
             role: 'assistant',
@@ -703,6 +786,19 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
     backgroundColor: _C.surface,
     surfaceTintColor: Colors.transparent,
     titleSpacing: 0,
+    actions: [
+      IconButton(
+        tooltip: 'Reset Chat',
+        onPressed: () {
+          setState(() {
+            _messages.clear();
+            _addIntroMessages();
+          });
+        },
+        icon: const Icon(Icons.refresh_rounded, color: _C.subtle),
+      ),
+      const SizedBox(width: 8),
+    ],
     leading: const BackButton(color: _C.text),
     title: Row(
       children: [
@@ -790,13 +886,13 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
       children: [
         const Icon(
           Icons.tips_and_updates_outlined,
-          color: Colors.white,
+          color: Colors.white70,
           size: 17,
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            'Write your full requirement in one message — AI will detect budget, days & area automatically.',
+            'Write your full requirement in simple language — I will detect budget and duration automatically.',
             style: GoogleFonts.inter(
               color: Colors.white,
               fontSize: 12,
@@ -847,30 +943,29 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
   );
 
   // ── Message list ──────────────────────────────────────────────────────────
-  Widget _buildMessageList() => ListView.builder(
+  // FIX: Use ListView with explicit children instead of ListView.builder.
+  // ListView.builder lazily creates/destroys items as they scroll in/out of
+  // view, which resets StatefulWidget state (typewriter animations, section
+  // counters). Using a plain ListView keeps every item alive in the tree.
+  Widget _buildMessageList() => ListView(
     controller: _scrollCtrl,
     padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
-    itemCount: _messages.length,
-    itemBuilder: (context, i) {
-      final msg = _messages[i];
-      final isLatestAI =
-          msg.role == 'assistant' &&
-          !msg.isTyping &&
-          i == _messages.length - 1 &&
-          !_isLoading;
-      return _buildBubble(msg, isLatestAI);
-    },
+    children: [
+      for (int i = 0; i < _messages.length; i++) _buildBubble(_messages[i], i),
+    ],
   );
 
   // ── Bubble dispatch ───────────────────────────────────────────────────────
-  Widget _buildBubble(ChatMessage msg, bool animate) {
+  Widget _buildBubble(ChatMessage msg, int index) {
     final isUser = msg.role == 'user';
     if (msg.isTyping) return _typingBubble();
 
     Widget body;
     switch (msg.type) {
       case _MsgType.combined:
+        // Key is the message's own UniqueKey — stable across rebuilds.
         body = _CombinedBubble(
+          key: msg.stableKey,
           sections: msg.sections,
           maxWidth: MediaQuery.of(context).size.width * 0.94,
         );
@@ -879,6 +974,8 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
         body = _guideBubble(msg.content);
         break;
       default:
+        // Animate only the very last assistant message that isn't loading.
+        final animate = !isUser && index == _messages.length - 1 && !_isLoading;
         body = _plainBubble(msg.content, isUser, animate);
     }
 
@@ -1089,7 +1186,7 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
                   onSubmitted: (_) => _submit(),
                   style: GoogleFonts.inter(fontSize: 14, color: _C.text),
                   decoration: InputDecoration(
-                    hintText: 'e.g. I have 7000 PKR for 14 days for meals',
+                    hintText: 'e.g. 5000 for 10 days food',
                     hintStyle: GoogleFonts.inter(color: _C.muted, fontSize: 13),
                     filled: true,
                     fillColor: _C.bg,
@@ -1124,19 +1221,32 @@ class _AIBudgetRecommendationState extends State<AIBudgetRecommendation>
     );
   }
 
-  Widget _areaChip(String label) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: _C.primary.withOpacity(0.1),
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: _C.primary.withOpacity(0.25)),
-    ),
-    child: Text(
-      label,
-      style: GoogleFonts.inter(
-        fontSize: 11,
-        color: _C.primaryDk,
-        fontWeight: FontWeight.w600,
+  Widget _areaChip(String label) => GestureDetector(
+    onTap: () {
+      final text = _promptCtrl.text.trim();
+      if (text.isEmpty) {
+        _promptCtrl.text = "I need a budget for $label... ";
+      } else {
+        _promptCtrl.text = "$text $label";
+      }
+      _promptCtrl.selection = TextSelection.fromPosition(
+        TextPosition(offset: _promptCtrl.text.length),
+      );
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: _C.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _C.primary.withOpacity(0.3)),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 11,
+          color: _C.primaryDk,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
   );

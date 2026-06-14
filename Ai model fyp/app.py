@@ -19,6 +19,7 @@ import re
 import subprocess
 import sys
 from datetime import datetime
+from config import EXCHANGE_RATES as CFG_RATES, CATEGORIES, validate_budget, validate_days, PLANNER_CONFIG
 
 # =========================================================
 # CONFIGURATION
@@ -40,12 +41,18 @@ logger = logging.getLogger(__name__)
 try:
     nlp = spacy.load("en_core_web_sm")
     logger.info("✅ spaCy NLP model loaded successfully")
-except OSError:
+except Exception:
     logger.warning("⚠️  spaCy model not found. Installing...")
-    import subprocess
-    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
-    nlp = spacy.load("en_core_web_sm")
-    logger.info("✅ spaCy NLP model installed and loaded")
+    try:
+        import subprocess
+        # Added check=True and better error handling for disk space/network issues
+        subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"], check=True)
+        nlp = spacy.load("en_core_web_sm")
+        logger.info("✅ spaCy NLP model installed and loaded")
+    except Exception as e:
+        logger.error(f"❌ Could not initialize spaCy: {e}")
+        logger.warning("🔗 Falling back to keyword-based analysis only")
+        nlp = None
 
 # =========================================================
 # DATA LOADING
@@ -103,11 +110,7 @@ def load_trained_models():
         logger.info("📥 Falling back to hardcoded data...")
         load_datasets()
 
-EXCHANGE_RATES = {
-    'INR_TO_PKR': 3.3,
-    'USD_TO_PKR': 278.0
-}
-
+EXCHANGE_RATES = CFG_RATES
 # =========================================================
 # NLP ANALYSIS FUNCTIONS
 # =========================================================
@@ -118,34 +121,43 @@ def analyze_user_input(text: str) -> Dict:
     Returns: {budget, days, category, confidence, original_text}
     """
     try:
-        # Process text with spaCy
-        doc = nlp(text.lower())
+        # Only use spaCy if it was successfully loaded
+        doc = None
+        if nlp:
+            doc = nlp(text.lower())
+        
+        text_lower = text.lower()
         
         # Extract numerical values
         budget = None
         days = None
         
-        # Find budget using regex (currency + number)
+        # Robust budget detection for "Easy English" (supports pk, rs, amount)
         budget_patterns = [
-            r'([\d,]+)\s*(?:rupees?|rs\.?|pkr)',  # Number first: "3000 rupees"
-            r'(?:rupees?|rs\.?|pkr)\s+([\d,]+)',  # Currency first: "rupees 3000"
+            # 1. Number followed by currency (highest confidence)
+            r'([\d,]+)\s*(?:pkr|rs|rupees?|pk|amount|bucks)',
+            # 2. Keywords (excluding 'for') followed by number
+            r'(?:i have|budget|total|pk|rs|pkr|rupees?|price|spent|cost)\s*([\d,]+)',
+            # 3. Leading number at start of sentence (common in "5000 for 10 days")
+            r'^\s*([\d,]+)(?!\s*(?:days?|weeks?|months?|din|hafte|mahine|d|w|m|mo))',
         ]
         
         for pattern in budget_patterns:
-            match = re.search(pattern, text.lower())
+            match = re.search(pattern, text_lower)
             if match:
                 budget = float(match.group(1).replace(',', ''))
                 break
         
-        # Find duration
+        # Robust duration detection (days, weeks, months, or just numbers)
         duration_patterns = [
-            (r'(\d+)\s*(?:days?|din)', 1),
-            (r'(\d+)\s*(?:weeks?|hafte)', 7),
-            (r'(\d+)\s*(?:months?|mahine)', 30),
+            (r'(\d+)\s*(?:days?|din|d)', 1),
+            (r'(\d+)\s*(?:weeks?|hafte|w|wk)', 7),
+            (r'(\d+)\s*(?:months?|mahine|m|mo)', 30),
+            (r'(?:for|period|duration)\s*(\d+)', 1), 
         ]
         
         for pattern, multiplier in duration_patterns:
-            match = re.search(pattern, text.lower())
+            match = re.search(pattern, text_lower)
             if match:
                 days = int(match.group(1)) * multiplier
                 break
@@ -159,7 +171,6 @@ def analyze_user_input(text: str) -> Dict:
             'maintenance': ['maintenance', 'repair', 'bijli', 'gas', 'paani', 'ghar', 'bill', 'plumber', 'electrician'],
         }
         
-        text_lower = text.lower()
         for cat, keywords in category_keywords.items():
             if any(keyword in text_lower for keyword in keywords):
                 category = cat
@@ -207,38 +218,24 @@ def load_datasets():
     logger.info("📦 Using built-in enhanced meal database...")
     
     DATASETS['meal'] = [
-        {'name': 'Biryani (1 plate)', 'price': 280, 'currency': 'PKR'},
-        {'name': 'Butter Chicken (1 plate)', 'price': 350, 'currency': 'PKR'},
-        {'name': 'Tandoori Chicken (500g)', 'price': 400, 'currency': 'PKR'},
-        {'name': 'Dal Makhani (1 bowl)', 'price': 200, 'currency': 'PKR'},
-        {'name': 'Samosa (2 pcs)', 'price': 60, 'currency': 'PKR'},
-        {'name': 'Pakora (200g)', 'price': 80, 'currency': 'PKR'},
-        {'name': 'Naan (2 pcs)', 'price': 120, 'currency': 'PKR'},
-        {'name': 'Roti (4 pcs)', 'price': 50, 'currency': 'PKR'},
-        {'name': 'Chicken Karahi (500g)', 'price': 350, 'currency': 'PKR'},
-        {'name': 'Aloo Gosht (500g)', 'price': 300, 'currency': 'PKR'},
-        {'name': 'Pulao (1 plate)', 'price': 240, 'currency': 'PKR'},
-        {'name': 'Paneer Tikka (200g)', 'price': 280, 'currency': 'PKR'},
-        {'name': 'Fish Fry (250g)', 'price': 320, 'currency': 'PKR'},
-        {'name': 'Kebab (250g)', 'price': 200, 'currency': 'PKR'},
-        {'name': 'Dosa (1 pcs)', 'price': 150, 'currency': 'PKR'},
-        {'name': 'Idli (4 pcs)', 'price': 100, 'currency': 'PKR'},
-        {'name': 'Chole Bhature', 'price': 140, 'currency': 'PKR'},
-        {'name': 'Gulab Jamun (4 pcs)', 'price': 80, 'currency': 'PKR'},
-        {'name': 'Laddu (200g)', 'price': 100, 'currency': 'PKR'},
-        {'name': 'Kheer (1 bowl)', 'price': 100, 'currency': 'PKR'},
-        {'name': 'Jalebi (200g)', 'price': 60, 'currency': 'PKR'},
-        {'name': 'Papadum (1 pcs)', 'price': 20, 'currency': 'PKR'},
-        {'name': 'Pickle (100g)', 'price': 40, 'currency': 'PKR'},
-        {'name': 'Chutney (200g)', 'price': 50, 'currency': 'PKR'},
-        {'name': 'Biryani Rice', 'price': 320, 'currency': 'PKR'},
-        {'name': 'Lentil Curry', 'price': 140, 'currency': 'PKR'},
-        {'name': 'Vegetable Biryani', 'price': 220, 'currency': 'PKR'},
-        {'name': 'Egg Biryani', 'price': 260, 'currency': 'PKR'},
-        {'name': 'Mix Vegetable', 'price': 110, 'currency': 'PKR'},
-        {'name': 'Spinach & Cheese', 'price': 160, 'currency': 'PKR'},
-        {'name': 'Mutton Korma', 'price': 380, 'currency': 'PKR'},
-        {'name': 'Prawn Curry', 'price': 420, 'currency': 'PKR'},
+        {'name': 'Fried Egg & Paratha', 'price': 90, 'type': 'breakfast'},
+        {'name': 'Halwa Puri', 'price': 150, 'type': 'breakfast'},
+        {'name': 'Yogurt & Muesli', 'price': 180, 'type': 'breakfast'},
+        {'name': 'Beef Biryani', 'price': 280, 'type': 'lunch'},
+        {'name': 'Chicken Pulao', 'price': 240, 'type': 'lunch'},
+        {'name': 'Butter Chicken', 'price': 350, 'type': 'dinner'},
+        {'name': 'Dal Mash', 'price': 120, 'type': 'dinner'},
+        {'name': 'Chicken Karahi', 'price': 350, 'type': 'dinner'},
+        {'name': 'Aloo Palak', 'price': 140, 'type': 'dinner'},
+        {'name': 'Paneer Tikka', 'price': 280, 'type': 'lunch'},
+        {'name': 'Seekh Kebab (2 pcs)', 'price': 200, 'type': 'dinner'},
+        {'name': 'Anday Wala Burger', 'price': 150, 'type': 'lunch'},
+        {'name': 'Fruit Chaat', 'price': 100, 'type': 'breakfast'},
+        {'name': 'Mix Sabzi', 'price': 130, 'type': 'lunch'},
+        {'name': 'Haleem', 'price': 200, 'type': 'lunch'},
+        {'name': 'Daal Chawal', 'price': 140, 'type': 'lunch'},
+        {'name': 'Aloo Gosht', 'price': 300, 'type': 'dinner'},
+        {'name': 'Nihari', 'price': 380, 'type': 'dinner'},
     ]
     
     DATASETS['laundry'] = [
@@ -358,45 +355,68 @@ def create_plan(budget: float, days: int, category: str) -> Dict:
     items = DATASETS[category]
     daily_budget = budget / days
     
-    # Get items sorted by price
-    sorted_items = sorted(items, key=lambda x: x['price'])
+    # Use category-specific constraints from config
+    max_items_per_day = CATEGORIES.get(category, {}).get('max_items_per_day', 3)
+
+    # Filter items that are potentially affordable within the daily budget
+    # Add a buffer to allow for some flexibility (e.g., 1.3 means 130% of daily budget)
+    affordable_items = [
+        item for item in items
+        if item['price'] <= daily_budget * PLANNER_CONFIG['BUDGET_BUFFER']
+    ]
+    
+    if not affordable_items:
+        logger.warning(f"No affordable items found for {category} with daily budget {daily_budget:.2f}. Falling back to cheapest items.")
+        # Fallback: if no items are affordable, take the cheapest few from the whole dataset
+        affordable_items = sorted(items, key=lambda x: x['price'])[:PLANNER_CONFIG['MAX_ITEMS_PREVIEW']]
+        if not affordable_items:
+            raise ValueError(f"No items available for category {category}.")
+
+    # Sort affordable items by price for greedy selection (cheapest first)
+    affordable_items = sorted(affordable_items, key=lambda x: x['price'])
     
     day_plans = []
-    remaining = budget
     total_spent = 0
+    pool_idx = 0
+    item_count = len(affordable_items)
     
     for day in range(1, days + 1):
         day_items = []
         day_spend = 0
+        current_day_remaining_budget = daily_budget
         
-        # Shuffle items for variety
-        shuffled = sorted_items.copy()
-        random.shuffle(shuffled)
-        
-        # Select items for this day
-        for item in shuffled:
-            if len(day_items) >= 3:  # Max 3 items per day
-                break
-            
-            cost = item['price']
-            if day_spend + cost <= daily_budget and remaining >= cost:
-                day_items.append(item['name'])
-                day_spend += cost
-                remaining -= cost
-        
-        # Fallback: pick cheapest item
-        if not day_items and remaining > 0 and sorted_items:
-            cheapest = sorted_items[0]
-            if remaining >= cheapest['price']:
-                day_items.append(cheapest['name'])
-                day_spend = cheapest['price']
-                remaining -= day_spend
+        # 1. Specialized Selection for Meals: Strict type slot preservation
+        if category == 'meal':
+            meal_types = ['breakfast', 'lunch', 'dinner']
+            # To ensure variety and avoid picking the same item if multiple exist
+            random.shuffle(affordable_items) 
+            for m_type in meal_types:
+                # Find affordable items strictly of this type from the shuffled affordable pool
+                type_pool = [i for i in affordable_items if i.get('type') == m_type and i['price'] <= current_day_remaining_budget]
+                if type_pool:
+                    item = random.choice(type_pool)
+                    day_items.append(item['name'])
+                    day_spend += item['price']
+                    current_day_remaining_budget -= item['price']
+                else:
+                    day_items.append("Adjusted (Home-cooked)") # Fallback if no affordable item of type
+        else:
+            # 2. General Greedy Selection (for Laundry/Maintenance - already sorted by price)
+            items_added_today = 0
+            for item in affordable_items: # Iterate through sorted affordable items
+                if items_added_today >= max_items_per_day:
+                    break
+                if current_day_remaining_budget >= item['price']:
+                    day_items.append(item['name'])
+                    day_spend += item['price']
+                    current_day_remaining_budget -= item['price']
+                    items_added_today += 1
         
         total_spent += day_spend
         day_plans.append({
             'day': day,
-            'items': day_items,
-            'spend': day_spend
+            'items': day_items, # List of item names
+            'spend': round(day_spend, 2) # Round daily spend
         })
     
     return {
@@ -502,50 +522,51 @@ def chat_plan():
             'maintenance': '🔧'
         }
         
-        # Generate chat message
-        chat_messages = [
-            {
-                'role': 'assistant',
-                'content': f"Perfect! I've analyzed your request and created a personalized {category_names[category].lower()} plan for you.\n\n"
-                          f"**Plan Overview:**\n"
-                          f"• {category_emojis[category]} Category: {category_names[category]}\n"
-                          f"• 📅 Duration: {days} days\n"
-                          f"• 💰 Total Budget: Rs {budget:,.0f}\n"
-                          f"• 📊 Daily Allowance: Rs {plan['daily_budget']:,.0f}\n"
-                          f"• ✅ Total Allocated: Rs {plan['total_spent']:,.0f}\n"
-                          f"• 💾 Remaining: Rs {plan['remaining']:,.0f}"
-            }
-        ]
+        # Consolidate response into a single unified message to prevent UI duplication/race conditions
+        summary = (f"🚀 STRATEGIC {category_names[category].upper()} ALLOCATION\n\n"
+                  f"I have engineered a financial roadmap for your {days}-day period with a total capital of PKR {budget:,.0f}.\n\n"
+                  f"EXECUTIVE SUMMARY\n"
+                  f"• Category: {category_names[category]} {category_emojis[category]}\n"
+                  f"• Daily Expenditure Ceiling: PKR {plan['daily_budget']:,.0f}\n"
+                  f"• Projected Total Investment: PKR {plan['total_spent']:,.0f}\n"
+                  f"• Projected Surplus (Savings): PKR {plan['remaining']:,.0f}")
         
         # Add daily breakdown messages
-        daily_messages = []
+        breakdown_text = "Daily Breakdown:\n"
+        meal_labels = ["Breakfast", "Lunch", "Dinner"]
+        meal_icons = ["🍳", "🍛", "🍲"]
+
         for day_plan in plan['day_plans']:
             if day_plan['items']:
-                items_text = ', '.join(day_plan['items'])
-                daily_messages.append(
-                    f"**Day {day_plan['day']}:** {items_text} (Rs {day_plan['spend']:,.0f})"
-                )
+                if category == 'meal':
+                    categorized = []
+                    for idx, item_name in enumerate(day_plan['items']):
+                        if idx < len(meal_labels):
+                            display_name = "Light/Home-made" if "Adjusted" in item_name else item_name
+                            categorized.append(f"{meal_icons[idx]} {meal_labels[idx]}: {display_name}")
+                    items_text = "\n".join(categorized)
+                else:
+                    items_text = "\n".join([f"🔹 {item}" for item in day_plan['items']])
+
+                breakdown_text += f"\n🗓️ DAY {day_plan['day']}\n{items_text}\n💰 Allocated: PKR {day_plan['spend']:,.0f}\n"
             else:
-                daily_messages.append(f"**Day {day_plan['day']}:** Rest day")
-        
-        chat_messages.append({
-            'role': 'assistant',
-            'content': "**Daily Breakdown:**\n\n" + "\n".join(daily_messages)
-        })
+                breakdown_text += f"\nDay {day_plan['day']}: Rest day\n"
         
         # Add tips
-        tips = [
-            "💡 **Pro Tips:**",
-            "• Buy items in bulk for better pricing",
-            "• Choose seasonal/discounted items when possible",
-            "• Keep 10-15% of budget as emergency reserve",
-            "• Track your spending daily for better control"
-        ]
+        tips_text = ("\n💡 Pro Tips:\n"
+                    "• Buy items in bulk for better pricing\n"
+                    "• Choose seasonal/discounted items when possible\n"
+                    "• Keep 10-15% of budget as emergency reserve\n"
+                    "• Track your spending daily for better control")
+
+        # Combine everything into a single response payload
+        full_response = f"{summary}\n\n{breakdown_text}\n{tips_text}"
         
-        chat_messages.append({
+        chat_messages = [{
             'role': 'assistant',
-            'content': "\n".join(tips)
-        })
+            'content': full_response,
+            'timestamp': datetime.now().isoformat()
+        }]
         
         return jsonify({
             'success': True,
@@ -765,7 +786,7 @@ if __name__ == '__main__':
     
     # Run Flask app
     app.run(
-        host='localhost',
+        host='0.0.0.0',
         port=5000,
         debug=True,
         use_reloader=False  # Prevent duplicate logging

@@ -14,6 +14,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from config import PRICE_COL_KEYWORDS, ITEM_COL_KEYWORDS, get_exchange_rate
 
 # Setup logging
 logging.basicConfig(
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Paths
 MODEL_DIR = Path('trained_models')
 TRAINING_DATA_DIR = Path('kaggle_data')
-NEW_DATA_DIR = Path('new_meal_datasets')
+MEAL_DATA_SUBDIR = TRAINING_DATA_DIR / 'food dataset'
 PREMIUM_DATA_DIR = Path('premium_datasets')
 
 # =========================================================
@@ -34,26 +35,25 @@ PREMIUM_DATA_DIR = Path('premium_datasets')
 
 # Enhanced meal database from Kaggle & Zomato
 MEAL_TRAINING_DATA = [
-    {'name': 'Biryani (1 plate)', 'price': 280, 'calories': 450, 'protein': 12},
-    {'name': 'Butter Chicken (1 plate)', 'price': 350, 'calories': 520, 'protein': 18},
-    {'name': 'Tandoori Chicken (500g)', 'price': 400, 'calories': 380, 'protein': 28},
-    {'name': 'Dal Makhani (1 bowl)', 'price': 200, 'calories': 280, 'protein': 8},
-    {'name': 'Samosa (2 pcs)', 'price': 60, 'calories': 180, 'protein': 3},
-    {'name': 'Pakora (200g)', 'price': 80, 'calories': 220, 'protein': 4},
-    {'name': 'Naan (2 pcs)', 'price': 120, 'calories': 250, 'protein': 7},
-    {'name': 'Roti (4 pcs)', 'price': 50, 'calories': 200, 'protein': 6},
-    {'name': 'Chicken Karahi (500g)', 'price': 350, 'calories': 420, 'protein': 22},
-    {'name': 'Aloo Gosht (500g)', 'price': 300, 'calories': 380, 'protein': 16},
-    {'name': 'Pulao (1 plate)', 'price': 240, 'calories': 400, 'protein': 10},
-    {'name': 'Paneer Tikka (200g)', 'price': 280, 'calories': 280, 'protein': 15},
-    {'name': 'Fish Fry (250g)', 'price': 320, 'calories': 320, 'protein': 24},
-    {'name': 'Kebab (250g)', 'price': 200, 'calories': 350, 'protein': 20},
-    {'name': 'Dosa (1 pcs)', 'price': 150, 'calories': 300, 'protein': 8},
-    {'name': 'Idli (4 pcs)', 'price': 100, 'calories': 200, 'protein': 5},
-    {'name': 'Chole Bhature', 'price': 140, 'calories': 450, 'protein': 12},
-    {'name': 'Gulab Jamun (4 pcs)', 'price': 80, 'calories': 280, 'protein': 2},
-    {'name': 'Laddu (200g)', 'price': 100, 'calories': 350, 'protein': 4},
-    {'name': 'Kheer (1 bowl)', 'price': 100, 'calories': 220, 'protein': 4},
+    {'name': 'Fried Egg & Paratha', 'price': 90, 'calories': 320, 'protein': 10, 'type': 'breakfast'},
+    {'name': 'Halwa Puri', 'price': 150, 'calories': 450, 'protein': 8, 'type': 'breakfast'},
+    {'name': 'Yogurt & Muesli', 'price': 180, 'calories': 250, 'protein': 12, 'type': 'breakfast'},
+    {'name': 'Beef Biryani', 'price': 280, 'calories': 550, 'protein': 18, 'type': 'lunch'},
+    {'name': 'Chicken Pulao', 'price': 240, 'calories': 450, 'protein': 14, 'type': 'lunch'},
+    {'name': 'Butter Chicken', 'price': 350, 'calories': 520, 'protein': 22, 'type': 'dinner'},
+    {'name': 'Dal Mash', 'price': 120, 'calories': 250, 'protein': 9, 'type': 'dinner'},
+    {'name': 'Chicken Karahi', 'price': 350, 'calories': 420, 'protein': 24, 'type': 'dinner'},
+    {'name': 'Aloo Palak', 'price': 140, 'calories': 180, 'protein': 6, 'type': 'dinner'},
+    {'name': 'Paneer Tikka', 'price': 280, 'calories': 280, 'protein': 15, 'type': 'lunch'},
+    {'name': 'Zinger Burger', 'price': 320, 'calories': 550, 'protein': 20, 'type': 'dinner'},
+    {'name': 'Seekh Kebab (2 pcs)', 'price': 200, 'calories': 350, 'protein': 18, 'type': 'dinner'},
+    {'name': 'Anday Wala Burger', 'price': 150, 'calories': 400, 'protein': 12, 'type': 'lunch'},
+    {'name': 'Nihari', 'price': 380, 'calories': 650, 'protein': 28, 'type': 'dinner'},
+    {'name': 'Fruit Chaat', 'price': 100, 'calories': 150, 'protein': 2, 'type': 'breakfast'},
+    {'name': 'Mix Sabzi', 'price': 130, 'calories': 190, 'protein': 5, 'type': 'lunch'},
+    {'name': 'Haleem', 'price': 200, 'calories': 380, 'protein': 16, 'type': 'lunch'},
+    {'name': 'Daal Chawal', 'price': 140, 'calories': 320, 'protein': 11, 'type': 'lunch'},
+    {'name': 'Aloo Gosht', 'price': 300, 'calories': 450, 'protein': 20, 'type': 'dinner'},
 ]
 
 LAUNDRY_TRAINING_DATA = [
@@ -106,6 +106,64 @@ class PricePredictionModel:
         self.feature_weights = {}
         
     def train(self):
+        """Train the model on training data, including external CSVs if available"""
+        # Dynamically load meal data from CSVs if this is the meal category
+        if self.category == 'meal':
+            csv_data = self._load_from_food_dataset()
+            if csv_data:
+                logger.info(f"📈 Merging {len(csv_data)} items from CSV files into meal training data")
+                self.training_data.extend(csv_data)
+
+        if not self.training_data:
+            logger.error(f"❌ No training data for {self.category}")
+            return None
+            
+        self._perform_training()
+        return self.model
+
+    def _load_from_food_dataset(self) -> List[Dict]:
+        """Loads meal items from CSV files using smart column detection"""
+        items = []
+        if not MEAL_DATA_SUBDIR.exists():
+            logger.warning(f"⚠️ Food dataset folder not found at {MEAL_DATA_SUBDIR}")
+            return items
+
+        for csv_file in MEAL_DATA_SUBDIR.glob('*.csv'):
+            try:
+                # Attempt to read with common encodings (UTF-8 then Latin-1 for global datasets)
+                try:
+                    df = pd.read_csv(csv_file, encoding='utf-8')
+                except UnicodeDecodeError:
+                    df = pd.read_csv(csv_file, encoding='latin1')
+                
+                # Identify columns based on config keywords
+                name_col = next((c for c in df.columns if c.lower() in ITEM_COL_KEYWORDS), None)
+                price_col = next((c for c in df.columns if c.lower() in PRICE_COL_KEYWORDS), None)
+
+                if not name_col or not price_col:
+                    logger.warning(f"Skipping {csv_file.name}: Could not identify name or price columns.")
+                    continue
+
+                # Data Cleaning: Remove rows with missing prices and convert to numeric
+                df[price_col] = pd.to_numeric(df[price_col], errors='coerce')
+                df = df.dropna(subset=[name_col, price_col])
+
+                # Convert to PKR (Assuming Kaggle food data is often USD or local, 
+                # you can adjust the currency detection logic here)
+                rate = get_exchange_rate('USD') # Defaulting to USD for global datasets
+
+                for _, row in df.iterrows():
+                    items.append({
+                        'name': str(row[name_col]), 
+                        'price': float(row[price_col]) * rate
+                    })
+                
+                logger.info(f"✅ Successfully loaded {len(df)} meal items from {csv_file.name}")
+            except Exception as e:
+                logger.error(f"❌ Could not load {csv_file.name}: {e}")
+        return items
+
+    def _perform_training(self):
         """Train the model on training data"""
         logger.info(f"🤖 Training {self.category.upper()} price prediction model...")
         
