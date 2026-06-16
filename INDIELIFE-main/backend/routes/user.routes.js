@@ -225,6 +225,23 @@ router.post("/login", authLimiter, async (req, res) => {
         .json({ success: false, message: "Invalid email or password" });
     }
 
+    // Account Status Check (Fix for AUTHENTICATION_EXCEPTIONS_REPORT.md)
+    if (user.accountStatus !== "active") {
+      if (user.accountStatus === "suspended") {
+        return res.status(403).json({
+          success: false,
+          message: "Your account is suspended. Please contact support.",
+          status: "suspended",
+        });
+      } else if (user.accountStatus === "deactivated") {
+        return res.status(403).json({
+          success: false,
+          message: "Your account has been deactivated.",
+          status: "deactivated",
+        });
+      }
+    }
+
     const accessToken = generateAccessToken(buildUserPayload(user));
     const refreshToken = generateRefreshToken();
 
@@ -454,32 +471,9 @@ router.post(
 );
 
 // GET USER BY TOKEN (for current user)
-router.get("/me", async (req, res) => {
+router.get("/me", verifyToken, async (req, res) => {
   try {
-    // Get token from Authorization header
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "No token provided",
-      });
-    }
-
-    // Verify token
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "your_jwt_secret",
-    );
-
-    if (decoded.role !== "user") {
-      return res.status(403).json({
-        success: false,
-        message: "Access denied. User role required.",
-      });
-    }
-
-    const user = await User.findById(decoded.userId).select("-password");
+    const user = await User.findById(req.user.userId).select("-password");
     if (!user) {
       return res.status(404).json({
         success: false,

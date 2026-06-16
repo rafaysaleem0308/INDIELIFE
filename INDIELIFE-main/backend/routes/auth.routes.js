@@ -31,7 +31,7 @@ function buildUserPayload(user) {
   return {
     userId: user._id,
     email: user.email,
-    role: "user",
+    role: user.role || "user",
     username: user.username,
     firstName: user.firstName,
     lastName: user.lastName,

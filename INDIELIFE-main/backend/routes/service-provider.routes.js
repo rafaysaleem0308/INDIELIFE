@@ -5,6 +5,7 @@ const User = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const RefreshToken = require("../models/refresh-token.model");
+const { verifyToken } = require("../middleware/auth");
 const { authLimiter } = require("../middleware/rateLimit");
 const {
   generateRefreshToken,
@@ -243,6 +244,22 @@ router.post("/login", authLimiter, async (req, res) => {
       });
     }
 
+    // Validate email format
+    if (!validateEmail(email)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid email format",
+      });
+    }
+
+    // Basic password validation
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
     // Find service provider directly in ServiceProvider collection
     const normalizedEmail = email.toLowerCase().trim();
     const serviceProvider = await ServiceProvider.findOne({
@@ -325,25 +342,10 @@ router.post("/login", authLimiter, async (req, res) => {
 });
 
 // GET CURRENT SERVICE PROVIDER
-router.get("/me", async (req, res) => {
+router.get("/me", verifyToken, async (req, res) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader)
-      return res
-        .status(401)
-        .json({ success: false, message: "No authorization header" });
-
-    const token = authHeader.split(" ")[1];
-    if (!token)
-      return res.status(401).json({ success: false, message: "No token" });
-
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "your_jwt_secret",
-    );
-
     // Find service provider
-    const sp = await ServiceProvider.findById(decoded.spId || decoded.userId);
+    const sp = await ServiceProvider.findById(req.user.spId || req.user.userId);
 
     if (!sp)
       return res
@@ -431,23 +433,6 @@ router.get("/profile/:spId", async (req, res) => {
 // ================================
 // PUT /signup/service-provider/profile/:spId - Update Profile
 // ================================
-// Middleware to verify JWT token (Copy from user routes or import)
-const verifyToken = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "No token provided" });
-
-  try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_SECRET || "your_jwt_secret",
-    );
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
-  }
-};
-
 router.put("/profile/:spId", verifyToken, async (req, res) => {
   try {
     const { spId } = req.params;

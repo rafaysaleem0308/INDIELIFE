@@ -30,8 +30,7 @@ router.post("/login", async (req, res) => {
         .json({ success: false, message: "Email and password are required" });
     }
 
-    const normalizedEmail = email.toLowerCase().trim();
-    const user = await User.findOne({ email: normalizedEmail, role: "admin" });
+    const user = await User.findOne({ email, role: "admin" });
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -319,7 +318,6 @@ router.patch(
         message: `Provider ${status} successfully`,
         provider,
         tokens,
-        provider,
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -533,11 +531,12 @@ router.patch(
   requireRole("admin"),
   async (req, res) => {
     try {
+      const reason = sanitizeString(req.body.reason || "Cancelled by Admin");
       const booking = await Order.findByIdAndUpdate(
         req.params.id,
         {
           status: "Cancelled",
-          cancellationReason: req.body.reason || "Cancelled by Admin",
+          cancellationReason: reason,
           cancellationDate: new Date(),
         },
         { new: true },
@@ -663,7 +662,9 @@ router.post(
   requireRole("admin"),
   async (req, res) => {
     try {
-      const { target, title, message, specificId } = req.body;
+      const { target, specificId } = req.body;
+      const title = sanitizeString(req.body.title);
+      const message = sanitizeString(req.body.message);
 
       if (!title || !message) {
         return res
