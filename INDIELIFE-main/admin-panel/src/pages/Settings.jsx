@@ -65,7 +65,7 @@ const Settings = () => {
                 isMaintenanceMode: settings.isMaintenanceMode,
             });
             setSnackbar({ open: true, message: 'Settings saved successfully', severity: 'success' });
-        } catch (error) {
+        } catch {
             setSnackbar({ open: true, message: 'Failed to save settings', severity: 'error' });
         } finally {
             setSaving(false);

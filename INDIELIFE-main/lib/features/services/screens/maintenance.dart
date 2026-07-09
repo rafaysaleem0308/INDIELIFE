@@ -371,18 +371,4 @@ class _MaintenanceScreenState extends State<MaintenanceScreen> {
     );
   }
 
-  Widget _badge(String txt) => Container(
-    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), 
-    decoration: BoxDecoration(
-      color: Color(0xFF11998e).withOpacity(0.12), 
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: Color(0xFF11998e).withOpacity(0.3), width: 1),
-    ), 
-    child: Text(
-      txt, 
-      style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF11998e))
-    )
-  );
-
-  Widget _stat(IconData i, String v, String l) => Column(children: [Icon(i, color: Color(0xFF11998e), size: 24), SizedBox(height: 4), Text(v, style: GoogleFonts.inter(fontWeight: FontWeight.bold)), Text(l, style: GoogleFonts.inter(fontSize: 11, color: Colors.grey))]);
 }

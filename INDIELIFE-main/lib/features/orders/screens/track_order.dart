@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:hello/core/services/api_service.dart';
 import 'package:hello/shared/widgets/review_sheet.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class TrackOrderScreen extends StatefulWidget {
   const TrackOrderScreen({super.key});
@@ -1177,15 +1178,15 @@ class _TrackOrderScreenState extends State<TrackOrderScreen> {
   void _handleCall(String? phone) async {
     if (phone == null || phone.isEmpty) return;
     final Uri launchUri = Uri(scheme: 'tel', path: phone);
-    // require url_launcher, checking pubspec
     try {
-      // Using url_launcher if available, otherwise just print/notify
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Calling $phone...")));
-      // Note: url_launcher is in pubspec, so this will work on real device
-      // import 'package:url_launcher/url_launcher.dart'; would be needed at top
-    } catch (e) {}
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else if (mounted) {
+        _showErrorSnackBar("Could not open dialer for $phone");
+      }
+    } catch (e) {
+      if (mounted) _showErrorSnackBar("Could not open dialer: $e");
+    }
   }
 
   void _showReviewSheet(Map<String, dynamic> order) {

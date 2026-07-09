@@ -69,59 +69,6 @@ class _AccommodationScreenState extends State<AccommodationScreen> {
     }
   }
 
-  List<dynamic> _getMockProviders() {
-    return [
-      {
-        '_id': 'm1',
-        'username': 'Luxury Skyline Apartment',
-        'price': 45000,
-        'rating': 4.8,
-        'city': 'Islamabad',
-        'address': 'Blue Area, Islamabad',
-        'availableRooms': 3,
-        'isShared': false,
-        'currentOccupants': 0,
-        'maxOccupants': 4,
-        'imageUrl': 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267',
-        'description': 'Modern apartment with stunning views of the Margalla Hills. Fully furnished with high-speed internet and backup power.',
-        'providerName': 'Ahmed Khan',
-        'serviceProviderId': 'sp1'
-      },
-      {
-        '_id': 'm2',
-        'username': 'Student Boys Hostel',
-        'price': 12000,
-        'rating': 4.2,
-        'city': 'Rawalpindi',
-        'address': 'Satellite Town, Rawalpindi',
-        'availableRooms': 1,
-        'isShared': true,
-        'currentOccupants': 3,
-        'maxOccupants': 4,
-        'imageUrl': 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5',
-        'description': 'Affordable shared accommodation for students. Near metro station. Includes 3 meals a day.',
-        'providerName': 'Hostel City',
-        'serviceProviderId': 'sp2'
-      },
-       {
-        '_id': 'm3',
-        'username': 'Cozy Private Room',
-        'price': 20000,
-        'rating': 4.9,
-        'city': 'Lahore',
-        'address': 'DHA Phase 5, Lahore',
-        'availableRooms': 1,
-        'isShared': false,
-        'currentOccupants': 0,
-        'maxOccupants': 1,
-        'imageUrl': 'https://images.unsplash.com/photo-1598928506311-c55ded91a20c',
-        'description': 'Quiet private room in a family home. Perfect for working professionals. Separate entrance.',
-        'providerName': 'Sarah Ali',
-        'serviceProviderId': 'sp3'
-      },
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     if (showProviderDetails && selectedProvider != null) {

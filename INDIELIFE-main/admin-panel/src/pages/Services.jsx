@@ -73,8 +73,6 @@ const Services = () => {
     severity: "success",
   });
 
-  const tabStatuses = ["Active", "Inactive"];
-
   const fetchServices = useCallback(async () => {
     try {
       setLoading(true);

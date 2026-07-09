@@ -77,7 +77,7 @@ const Users = () => {
             await api.patch(`/admin/users/${id}/status`, { accountStatus: newStatus });
             setSnackbar({ open: true, message: `User ${newStatus === 'active' ? 'activated' : 'suspended'} successfully`, severity: 'success' });
             fetchUsers();
-        } catch (error) {
+        } catch {
             setSnackbar({ open: true, message: 'Failed to update user status', severity: 'error' });
         } finally {
             setActionLoading(false);
@@ -93,7 +93,7 @@ const Users = () => {
             setDetailOpen(false);
             setSelectedUser(null);
             fetchUsers();
-        } catch (error) {
+        } catch {
             setSnackbar({ open: true, message: 'Failed to delete user', severity: 'error' });
         } finally {
             setActionLoading(false);

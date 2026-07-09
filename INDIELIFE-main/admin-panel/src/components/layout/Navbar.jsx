@@ -15,7 +15,7 @@ import {
   Chip,
 } from "@mui/material";
 import { Bell, LogOut, RefreshCw, Clock } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/useAuth";
 import { useNavigate } from "react-router-dom";
 import { DRAWER_WIDTH } from "./Sidebar";
 import api from "../../utils/api";

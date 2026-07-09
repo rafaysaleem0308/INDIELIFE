@@ -13,8 +13,8 @@ import {
 } from "@mui/material";
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import { FormValidator, validationSchemas } from "../utils/validation";
+import { useAuth } from "../context/useAuth";
+import { FormValidator } from "../utils/validation";
 
 const Login = () => {
   const [email, setEmail] = useState("");

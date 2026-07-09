@@ -491,19 +491,6 @@ class _LaundryProviderHomeState extends State<LaundryProviderHome>
     );
   }
 
-  Widget _buildOrders() => Scaffold(
-    backgroundColor: Colors.transparent,
-    appBar: AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      title: Text(
-        "All Orders",
-        style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-      ),
-    ),
-    body: _buildOrderList(_orders),
-  );
-
   Widget _buildWelcomeHeader() {
     bool isVerified = userData?['isVerified'] ?? false;
     return Container(
@@ -602,8 +589,6 @@ class _LaundryProviderHomeState extends State<LaundryProviderHome>
         ? Colors.green
         : (o['status'] == 'Pending' ? Colors.orange : Colors.blueAccent);
     String displayStatus = o['status'] ?? 'Pending';
-    String customerPhone = o['customerId']?['phone'] ?? (o['phone'] ?? '');
-
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       padding: EdgeInsets.all(20),

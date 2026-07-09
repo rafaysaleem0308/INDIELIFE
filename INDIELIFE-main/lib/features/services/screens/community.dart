@@ -24,7 +24,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
   List<dynamic> _posts = [];
   bool _isLoading = true;
   int _currentPage = 1;
-  int _totalPages = 1;
   bool _hasMore = true;
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _postController = TextEditingController();
@@ -70,7 +69,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
           setState(() {
             _posts = result['posts'] ?? [];
             _currentPage = 1;
-            _totalPages = result['totalPages'] ?? 1;
             _hasMore = result['hasMore'] ?? false;
             _isLoading = false;
           });

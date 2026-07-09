@@ -43,6 +43,8 @@ import {
 } from "lucide-react";
 import api from "../utils/api";
 
+const statusMap = ["pending", "approved", "suspended", "rejected"];
+
 const Providers = () => {
   const [providers, setProviders] = useState([]);
   const [filteredProviders, setFilteredProviders] = useState([]);
@@ -57,8 +59,6 @@ const Providers = () => {
     message: "",
     severity: "success",
   });
-
-  const statusMap = ["pending", "approved", "suspended", "rejected"];
 
   const fetchProviders = useCallback(async () => {
     try {
@@ -138,7 +138,7 @@ const Providers = () => {
       setDetailOpen(false);
       setSelectedProvider(null);
       fetchProviders();
-    } catch (error) {
+    } catch {
       setSnackbar({
         open: true,
         message: "Failed to delete provider",

@@ -50,6 +50,9 @@ const statusColors = {
   "On Hold": "default",
 };
 
+const tabStatuses = [null, "Pending", "Confirmed", "Delivered", "Cancelled"];
+const tabLabels = ["All", "Pending", "Confirmed", "Delivered", "Cancelled"];
+
 const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -61,9 +64,6 @@ const Bookings = () => {
     message: "",
     severity: "success",
   });
-
-  const tabStatuses = [null, "Pending", "Confirmed", "Delivered", "Cancelled"];
-  const tabLabels = ["All", "Pending", "Confirmed", "Delivered", "Cancelled"];
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -100,7 +100,7 @@ const Bookings = () => {
       });
       setDetailOpen(false);
       fetchBookings();
-    } catch (error) {
+    } catch {
       setSnackbar({
         open: true,
         message: "Failed to cancel booking",

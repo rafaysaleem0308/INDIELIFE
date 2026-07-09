@@ -49,7 +49,6 @@ import 'package:hello/features/notifications/screens/notifications_screen.dart';
 // ─── Shared ──────────────────────────────────────────────────────────────────
 import 'package:hello/shared/widgets/loading_screen.dart';
 import 'package:hello/core/services/sos_service.dart';
-import 'package:hello/core/services/stripe_service.dart';
 import 'package:hello/core/services/location_service.dart';
 import 'package:hello/core/constants/stripe_config.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';

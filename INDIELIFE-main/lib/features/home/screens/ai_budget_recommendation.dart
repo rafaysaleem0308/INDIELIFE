@@ -38,21 +38,6 @@ class _C {
 
 /// Returns `s.substring(0, end)` but advances `end` by 1 if it would split a
 /// surrogate pair (lead surrogate U+D800–U+DBFF at position end-1).
-String _safeSubstring(String s, int end) {
-  if (end <= 0) return '';
-  if (end >= s.length) return s;
-  // If the code unit just before `end` is a lead surrogate, include its
-  // trailing surrogate as well so the string stays well-formed.
-  final cu = s.codeUnitAt(end - 1);
-  if (cu >= 0xD800 && cu <= 0xDBFF && end < s.length) {
-    return s.substring(0, end + 1);
-  }
-  return s.substring(0, end);
-}
-
-/// Number of Unicode scalar values (runes) in [s].
-int _runeCount(String s) => s.runes.length;
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  BOLD MARKDOWN PARSER
 // ─────────────────────────────────────────────────────────────────────────────
@@ -89,7 +74,7 @@ class _Section {
 // ─────────────────────────────────────────────────────────────────────────────
 //  MESSAGE MODEL
 // ─────────────────────────────────────────────────────────────────────────────
-enum _MsgType { normal, typing, combined, guide }
+enum _MsgType { normal, combined, guide }
 
 class ChatMessage {
   final String role;

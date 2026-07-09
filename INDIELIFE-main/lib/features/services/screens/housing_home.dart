@@ -432,17 +432,6 @@ class _PropertyCard extends StatelessWidget {
     );
   }
 
-  Widget _featureIcon(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 15, color: Colors.grey[500]),
-        const SizedBox(width: 4),
-        Text(label, style: GoogleFonts.inter(color: Colors.grey[600], fontSize: 11)),
-      ],
-    );
-  }
-
   Widget _placeholderImage() {
     return Container(
       color: const Color(0xFF8E2DE2).withValues(alpha: 0.1),

@@ -285,6 +285,8 @@ def load_datasets():
 # API ENDPOINTS
 # =========================================================
 
+@app.route('/', methods=['GET'])
+@app.route('/health', methods=['GET'])
 @app.route('/api/health', methods=['GET'])
 def health():
     """Health check endpoint"""

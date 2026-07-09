@@ -18,7 +18,6 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
   List<dynamic> _topRatedServices = [];
   List<dynamic> _personalizedRecommendations = [];
   bool _isLoading = false;
-  bool _isLoadingRecommendations = false;
   bool _isLoggedIn = false;
   final List<String> _categories = [
     'All',
@@ -36,7 +35,6 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
   }
 
   Future<void> _loadRecommendations() async {
-    setState(() => _isLoadingRecommendations = true);
     try {
       // Check if user is logged in
       final token = await ApiService.getToken();
@@ -58,12 +56,10 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
           _personalizedRecommendations = personalized;
           _featuredServices = featured;
           _topRatedServices = topRated;
-          _isLoadingRecommendations = false;
         });
       }
     } catch (e) {
       print("Load recommendations error: $e");
-      if (mounted) setState(() => _isLoadingRecommendations = false);
     }
   }
 
@@ -103,7 +99,6 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
 
   void _navigateToResult(dynamic item) {
     final String type = item['serviceType'] ?? '';
-    final String providerId = item['serviceProviderId']?.toString() ?? '';
     final String serviceId = item['_id']?.toString() ?? '';
 
     // Track service view interaction
@@ -384,8 +379,6 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
 
   Widget _buildFeaturedCard(dynamic item, int index) {
     String serviceName = item['serviceName'] ?? 'Service';
-    String providerName = item['serviceProviderName'] ?? 'Provider';
-    String type = item['serviceType'] ?? 'Service';
     String price = item['price']?.toString() ?? '0';
     double rating = (item['rating'] ?? 0).toDouble();
 
@@ -480,7 +473,6 @@ class _GlobalSearchScreenState extends State<GlobalSearchScreen> {
 
   Widget _buildTopRatedCard(dynamic item, int index) {
     String serviceName = item['serviceName'] ?? 'Service';
-    String providerName = item['serviceProviderName'] ?? 'Provider';
     String type = item['serviceType'] ?? 'Service';
     String price = item['price']?.toString() ?? '0';
     double rating = (item['rating'] ?? 0).toDouble();

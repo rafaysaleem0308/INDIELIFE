@@ -25,21 +25,12 @@ import {
   Alert,
   CircularProgress,
   Snackbar,
-  TextField,
-  Stack,
 } from "@mui/material";
 import {
   Eye,
-  CheckCircle,
-  XCircle,
-  ShieldAlert,
   Trash2,
   Home,
   MapPin,
-  DollarSign,
-  Users,
-  Bed,
-  Bath,
 } from "lucide-react";
 import api from "../utils/api";
 
@@ -48,6 +39,8 @@ const statusColors = {
   Inactive: "error",
 };
 
+const statusMap = ["Active", "Inactive"];
+
 const Housing = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,15 +48,12 @@ const Housing = () => {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
   const [stats, setStats] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
-
-  const statusMap = ["Active", "Inactive"];
 
   const fetchProperties = useCallback(async () => {
     try {
@@ -108,32 +98,6 @@ const Housing = () => {
     fetchStats();
   }, [fetchProperties, fetchStats]);
 
-  const handleStatusUpdate = async (id, status) => {
-    try {
-      setActionLoading(true);
-      const body = { status };
-      await api.patch(`/admin/services/${id}/status`, body);
-      setSnackbar({
-        open: true,
-        message: `Service ${status} successfully`,
-        severity: "success",
-      });
-      setDetailOpen(false);
-      setSelectedProperty(null);
-      setRejectionReason("");
-      fetchProperties();
-      fetchStats();
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.message || "Action failed",
-        severity: "error",
-      });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   const handleDelete = async (id) => {
     if (
       !window.confirm(
@@ -152,7 +116,7 @@ const Housing = () => {
       setDetailOpen(false);
       fetchProperties();
       fetchStats();
-    } catch (error) {
+    } catch {
       setSnackbar({ open: true, message: "Delete failed", severity: "error" });
     } finally {
       setActionLoading(false);
