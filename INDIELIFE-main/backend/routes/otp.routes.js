@@ -10,11 +10,23 @@ const Otp = require("../models/otp.model");
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
   service: "gmail",
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 15000,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 });
+
+function sendMailWithTimeout(mailOptions, timeoutMs = 15000) {
+  return Promise.race([
+    transporter.sendMail(mailOptions),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("OTP email send timed out")), timeoutMs),
+    ),
+  ]);
+}
 
 // ================================
 // SIGNUP OTP ROUTES
@@ -157,7 +169,7 @@ router.post("/send-otp-signup", async (req, res) => {
   `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMailWithTimeout(mailOptions);
 
     console.log("OTP sent successfully to:", email);
 
@@ -167,9 +179,10 @@ router.post("/send-otp-signup", async (req, res) => {
     });
   } catch (error) {
     console.error("Send OTP error:", error);
-    res.status(500).json({
+    res.status(503).json({
       status: "error",
-      message: "Failed to send OTP",
+      message:
+        "Failed to send OTP email. Please try again in a moment or contact support.",
     });
   }
 });

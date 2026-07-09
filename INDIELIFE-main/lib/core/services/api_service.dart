@@ -88,7 +88,7 @@ class ApiService {
         Uri.parse('$baseUrl/auth/send-otp-signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'role': role}),
-      );
+      ).timeout(const Duration(seconds: 20));
 
       print("Send OTP status: ${response.statusCode}");
       print("Send OTP body: ${response.body}");
@@ -134,7 +134,8 @@ class ApiService {
       print("Send OTP error: $error");
       return {
         'status': 'error',
-        'message': 'Network error: Please check your connection',
+        'message':
+            'OTP email is taking too long. Please try again in a moment.',
       };
     }
   }
@@ -199,7 +200,7 @@ class ApiService {
         Uri.parse('$baseUrl/auth/verify-otp-signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'email': email, 'otp': otp}),
-      );
+      ).timeout(const Duration(seconds: 20));
 
       print("Verify OTP status: ${response.statusCode}");
       print("Verify OTP body: ${response.body}");
