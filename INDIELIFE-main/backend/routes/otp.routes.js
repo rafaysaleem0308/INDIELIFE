@@ -11,8 +11,8 @@ const Otp = require("../models/otp.model");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: "saleemrafey33@gmail.com",
-    pass: "zcusdtjpujnealfo",
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
   },
 });
 
@@ -66,7 +66,7 @@ router.post("/send-otp-signup", async (req, res) => {
 
     // Send email
     const mailOptions = {
-      from: "saleemrafey33@gmail.com",
+      from: process.env.EMAIL_USER,
       to: normalizedEmail,
       subject: "Your Email Verification OTP - IndieLife",
       html: `
@@ -275,7 +275,7 @@ router.post("/send-otp", async (req, res) => {
 
     // Send email
     const mailOptions = {
-      from: "saleemrafey33@gmail.com",
+      from: process.env.EMAIL_USER,
       to: normalizedEmail,
       subject: "Password Reset OTP - IndieLife",
       html: `
