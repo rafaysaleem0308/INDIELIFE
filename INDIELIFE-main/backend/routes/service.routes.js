@@ -303,7 +303,7 @@ router.get("/meal-providers", async (req, res) => {
     const meals = await Service.find(query)
       .populate(
         "serviceProviderId",
-        "firstName lastName email phone city address districtName districtNazim",
+        "firstName lastName email phone city address districtName districtNazim profileImage",
       )
       .sort(sortOptions)
       .lean();
@@ -347,7 +347,7 @@ router.get("/meal-providers", async (req, res) => {
           deliveryTime: meal.deliveryTime || "30-45 min",
           meals: [],
           mealsCount: 0,
-          profileImage: null,
+          profileImage: providerData.profileImage || null,
           cuisineTypes: new Set(),
           mealTypes: new Set(),
           isVerified: providerData.isVerified || false,
@@ -437,7 +437,7 @@ router.get("/meal-provider/:providerId", async (req, res) => {
       rating: averageRating,
       deliveryTime: "30-45 min",
       mealsCount: meals.length,
-      profileImage: null,
+      profileImage: provider.profileImage || null,
       isVerified: provider.isVerified,
       isActive: provider.isActive,
       joinedDate: provider.createdAt,

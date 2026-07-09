@@ -5,6 +5,7 @@ const Chat = require("../models/chat.model");
 const Message = require("../models/message.model");
 const User = require("../models/user.model");
 const ServiceProvider = require("../models/service-provider.model");
+const Service = require("../models/service.model");
 const { verifyToken } = require("../middleware/auth");
 
 // Start or get a chat
@@ -12,7 +13,7 @@ router.post("/start", verifyToken, async (req, res) => {
     try {
         const { providerId, serviceId } = req.body;
         const myId = req.user.userId || req.user.spId;
-        const myModel = req.user.role === 'User' ? 'User' : 'ServiceProvider';
+        const myModel = req.user.role === 'user' ? 'User' : 'ServiceProvider';
 
 
 
@@ -23,6 +24,12 @@ router.post("/start", verifyToken, async (req, res) => {
         // Convert to ObjectId for reliable lookup
         const myObjectId = new mongoose.Types.ObjectId(myId);
         const providerObjectId = new mongoose.Types.ObjectId(providerId);
+        let normalizedServiceId = null;
+
+        if (serviceId && mongoose.Types.ObjectId.isValid(serviceId)) {
+            const serviceExists = await Service.exists({ _id: serviceId });
+            if (serviceExists) normalizedServiceId = serviceId;
+        }
 
         // Find existing chat containing both participants
         let chat = await Chat.findOne({
@@ -35,8 +42,8 @@ router.post("/start", verifyToken, async (req, res) => {
         if (chat) {
 
             // Update serviceId if it was missing
-            if (serviceId && !chat.serviceId) {
-                chat.serviceId = serviceId;
+            if (normalizedServiceId && !chat.serviceId) {
+                chat.serviceId = normalizedServiceId;
                 await chat.save();
             }
         } else {
@@ -46,7 +53,7 @@ router.post("/start", verifyToken, async (req, res) => {
                     { user: myObjectId, modelType: myModel },
                     { user: providerObjectId, modelType: myModel === 'User' ? 'ServiceProvider' : 'User' }
                 ],
-                serviceId: serviceId
+                serviceId: normalizedServiceId
             });
             await chat.save();
         }
