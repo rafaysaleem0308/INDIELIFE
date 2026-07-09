@@ -23,23 +23,9 @@ const {
   sanitizeString,
   sanitizeHtmlContent,
 } = require("../utils/validators");
+const { createUpload, getUploadedFileUrl } = require("../utils/upload");
 
-const multer = require("multer");
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      "profile-user-" +
-        Date.now() +
-        "-" +
-        file.originalname.replace(/\s+/g, "-"),
-    );
-  },
-});
-const upload = multer({ storage: storage });
+const upload = createUpload("Indielife/users", "profile-user");
 
 // POST /signup/user
 router.post("/", async (req, res) => {
@@ -442,7 +428,7 @@ router.post(
           .json({ success: false, message: "No image file provided" });
       }
 
-      const imageUrl = "/uploads/" + req.file.filename;
+      const imageUrl = getUploadedFileUrl(req.file);
 
       const user = await User.findByIdAndUpdate(
         userId,

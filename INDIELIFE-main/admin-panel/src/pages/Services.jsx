@@ -41,10 +41,7 @@ import {
   Wrench,
   Building2,
 } from "lucide-react";
-import api from "../utils/api";
-
-const BASE_URL =
-  import.meta.env.VITE_API_URL?.replace("/api", "") || "http://localhost:3000";
+import api, { resolveAssetUrl } from "../utils/api";
 
 const typeIcons = {
   "Meal Provider": <Utensils size={16} />,
@@ -243,7 +240,7 @@ const Services = () => {
                       >
                         {s.imageUrl ? (
                           <Avatar
-                            src={`${BASE_URL}${s.imageUrl}`}
+                            src={resolveAssetUrl(s.imageUrl)}
                             variant="rounded"
                             sx={{ width: 44, height: 44 }}
                           />
@@ -371,7 +368,7 @@ const Services = () => {
               {selected.imageUrl && (
                 <Box
                   component="img"
-                  src={`${BASE_URL}${selected.imageUrl}`}
+                  src={resolveAssetUrl(selected.imageUrl)}
                   alt="Service"
                   sx={{
                     width: "100%",

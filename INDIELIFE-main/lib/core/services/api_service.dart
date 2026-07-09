@@ -47,14 +47,30 @@ class ApiResponse {
 }
 
 class ApiService {
+  static const String _configuredBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
   static String get baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) {
+      return _configuredBaseUrl.replaceAll(RegExp(r'/$'), '');
+    }
+
     if (Platform.isAndroid) {
-      // Android Emulator: 10.0.2.2 = host's localhost
       return "http://10.0.2.2:3000";
     }
     return "http://localhost:3000";
-  } // Local development
-  // static const String baseUrl = "https://your-production-api.com"; // Production
+  }
+
+  static String resolveImageUrl(String? imageUrl) {
+    if (imageUrl == null || imageUrl.trim().isEmpty) return '';
+    final trimmed = imageUrl.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed;
+    }
+    final normalizedPath = trimmed.startsWith('/') ? trimmed : '/$trimmed';
+    return '$baseUrl$normalizedPath';
+  }
 
   // ================================
   // OTP SIGNUP FUNCTIONS
@@ -518,6 +534,15 @@ class ApiService {
         print("❌ Service provider login HTTP error: ${spResponse.statusCode}");
       }
 
+      if (spResponse.statusCode != 200) {
+        final errorData = json.decode(spResponse.body);
+        return {
+          'success': false,
+          'message': errorData['message'] ?? 'Invalid email or password',
+          'statusCode': spResponse.statusCode,
+        };
+      }
+
       // If both fail, try to get more specific error
       if (userResponse.statusCode != 200) {
         final errorData = json.decode(userResponse.body);
@@ -525,15 +550,6 @@ class ApiService {
           'success': false,
           'message': errorData['message'] ?? 'Invalid email or password',
           'statusCode': userResponse.statusCode,
-        };
-      }
-
-      if (spResponse.statusCode != 200) {
-        final errorData = json.decode(spResponse.body);
-        return {
-          'success': false,
-          'message': errorData['message'] ?? 'Invalid email or password',
-          'statusCode': spResponse.statusCode,
         };
       }
 

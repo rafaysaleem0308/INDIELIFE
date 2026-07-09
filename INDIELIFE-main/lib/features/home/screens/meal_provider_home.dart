@@ -827,7 +827,7 @@ class _MealProviderHomeState extends State<MealProviderHome>
                             top: Radius.circular(20),
                           ),
                           child: Image.network(
-                            ApiService.baseUrl + imageUrl,
+                            ApiService.resolveImageUrl(imageUrl),
                             height: 140,
                             width: double.infinity,
                             fit: BoxFit.cover,

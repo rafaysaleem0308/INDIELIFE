@@ -39,7 +39,10 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
     super.initState();
     _loadAllData();
     _loadCart(); // Initial cart load
-    _refreshTimer = Timer.periodic(Duration(seconds: 15), (_) => _silentRefresh());
+    _refreshTimer = Timer.periodic(
+      Duration(seconds: 15),
+      (_) => _silentRefresh(),
+    );
   }
 
   @override
@@ -117,7 +120,10 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
     }
   }
 
-  Future<void> _loadProviderDetails(String providerId, {bool silent = false}) async {
+  Future<void> _loadProviderDetails(
+    String providerId, {
+    bool silent = false,
+  }) async {
     if (!silent) _safeSetState(() => loading = true);
     try {
       final result = await ApiService.getMealProviderDetails(providerId);
@@ -126,12 +132,15 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
         if (result['success'] == true) {
           selectedProvider = result['provider'];
           if (selectedProvider != null && result['meals'] != null) {
-            selectedProvider['meals'] =
-                List<Map<String, dynamic>>.from(result['meals']);
+            selectedProvider['meals'] = List<Map<String, dynamic>>.from(
+              result['meals'],
+            );
           }
         } else {
-          selectedProvider = allProviders
-              .firstWhere((p) => p['_id'] == providerId, orElse: () => null);
+          selectedProvider = allProviders.firstWhere(
+            (p) => p['_id'] == providerId,
+            orElse: () => null,
+          );
         }
         showProviderDetails = true;
         loading = false;
@@ -155,7 +164,8 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
       'providerName': selectedProvider?['username']?.toString() ?? 'Chef',
       'serviceType': 'Meal Provider',
       'quantity': 1,
-      'name': meal['name']?.toString() ?? meal['serviceName']?.toString() ?? 'Meal',
+      'name':
+          meal['name']?.toString() ?? meal['serviceName']?.toString() ?? 'Meal',
       'price': double.tryParse(meal['price'].toString()) ?? 0.0,
       'image': meal['imageUrl'] ?? meal['image'] ?? '',
       'instructions': '', // Optional
@@ -167,7 +177,7 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
       _loadCart(); // Refresh cart
       _showSnack('${cartItemData['name']} added to cart!', Colors.green);
     } else if (result['conflict'] == true) {
-       _showConflictDialog(cartItemData);
+      _showConflictDialog(cartItemData);
     } else {
       _showSnack(result['message'] ?? 'Failed to add to cart', Colors.red);
     }
@@ -177,10 +187,18 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text("Clear Cart?", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text("Your cart contains items from another provider. Would you like to clear it and add this item instead?"),
+        title: Text(
+          "Clear Cart?",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          "Your cart contains items from another provider. Would you like to clear it and add this item instead?",
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancel", style: TextStyle(color: Colors.grey))),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text("Cancel", style: TextStyle(color: Colors.grey)),
+          ),
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -188,7 +206,10 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
               final result = await ApiService.addToCart(pendingItem);
               if (result['success'] == true) {
                 _loadCart();
-                _showSnack('${pendingItem['name']} added to cart!', Colors.green);
+                _showSnack(
+                  '${pendingItem['name']} added to cart!',
+                  Colors.green,
+                );
               } else {
                 _showSnack(result['message'] ?? 'Failed to add', Colors.red);
               }
@@ -215,8 +236,8 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
         body: loading
             ? _buildShimmerLoading()
             : (showProviderDetails
-                ? _buildProviderProfile()
-                : _buildDiscoveryScreen()),
+                  ? _buildProviderProfile()
+                  : _buildDiscoveryScreen()),
         floatingActionButton: cartItems.isNotEmpty && showProviderDetails
             ? _buildCartFAB()
             : null,
@@ -255,11 +276,21 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
       elevation: 0,
       backgroundColor: const Color(0xFFF8F9FD),
       centerTitle: true,
-      title: Text('Discover Meals', 
-        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+      title: Text(
+        'Discover Meals',
+        style: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+        ),
+      ),
       leading: Container(
         margin: const EdgeInsets.all(8),
-        decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4)],
+        ),
         child: BackButton(color: Colors.black),
       ),
     );
@@ -279,21 +310,31 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
             padding: const EdgeInsets.only(right: 8),
             child: FilterChip(
               selected: sel,
-              label: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(f['icon'] as IconData, size: 16,
-                  color: sel ? Colors.white : const Color(0xFFFF512F)),
-                const SizedBox(width: 6),
-                Text(f['label'] as String),
-              ]),
-              labelStyle: GoogleFonts.inter(fontSize: 13,
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    f['icon'] as IconData,
+                    size: 16,
+                    color: sel ? Colors.white : const Color(0xFFFF512F),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(f['label'] as String),
+                ],
+              ),
+              labelStyle: GoogleFonts.inter(
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: sel ? Colors.white : Colors.black87),
+                color: sel ? Colors.white : Colors.black87,
+              ),
               backgroundColor: Colors.white,
               selectedColor: const Color(0xFFFF512F),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: sel ? Colors.transparent : Colors.grey.shade200)),
+                  color: sel ? Colors.transparent : Colors.grey.shade200,
+                ),
+              ),
               onSelected: (_) {
                 _safeSetState(() => _selectedFilter = f['label'] as String);
                 _loadAllMealProviders();
@@ -310,18 +351,26 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
       child: Row(
         children: [
-          Text('${allProviders.length} chefs found',
-            style: GoogleFonts.inter(fontSize: 14, color: Colors.grey[600],
-              fontWeight: FontWeight.w500)),
+          Text(
+            '${allProviders.length} chefs found',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(color: Colors.white,
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey.shade200)),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
-                value: _sortBy, isDense: true,
+                value: _sortBy,
+                isDense: true,
                 style: GoogleFonts.inter(fontSize: 13, color: Colors.black87),
                 items: const [
                   DropdownMenuItem(value: 'rating', child: Text('Top Rated')),
@@ -342,112 +391,194 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
 
   Widget _buildProviderCard(dynamic provider, int index) {
     // Filter out 'Pakistani' just in case it exists in old data
-    String cuisines = (provider['cuisineTypes'] as List?)
-        ?.where((c) => c.toString().toLowerCase() != 'pakistani')
-        .join(', ') ?? 'Specialty Food';
+    String cuisines =
+        (provider['cuisineTypes'] as List?)
+            ?.where((c) => c.toString().toLowerCase() != 'pakistani')
+            .join(', ') ??
+        'Specialty Food';
     if (cuisines.isEmpty) cuisines = 'Specialty Food';
 
     final rating = (provider['rating'] ?? 0).toStringAsFixed(1);
     final verified = provider['isVerified'] == true;
-    final String time = provider['deliveryTime'] ?? provider['cookingTime'] ?? '30-45 mins';
-    
+    final String time =
+        provider['deliveryTime'] ?? provider['cookingTime'] ?? '30-45 mins';
+
     // Pictures
     final String? profileImage = provider['profileImage'];
-    final String? bannerImage = provider['bannerImage'] ?? provider['coverImage'] ?? profileImage;
+    final String? bannerImage =
+        provider['bannerImage'] ?? provider['coverImage'] ?? profileImage;
 
     return GestureDetector(
-      onTap: () => _loadProviderDetails(provider['_id']),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, 6))
-          ],
-        ),
-        child: Column(children: [
-          // Banner Image (Restaurant Picture)
-          Container(
-            height: 160,
+          onTap: () => _loadProviderDetails(provider['_id']),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              color: Colors.grey[200],
-              image: bannerImage != null && bannerImage.toString().isNotEmpty
-                  ? DecorationImage(
-                      image: NetworkImage(bannerImage.toString().startsWith('http') 
-                          ? bannerImage.toString() 
-                          : "${ApiService.baseUrl}$bannerImage"),
-                      fit: BoxFit.cover,
-                    )
-                  : null,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
-            child: bannerImage == null || bannerImage.toString().isEmpty 
-              ? Center(child: Icon(Icons.restaurant, color: Colors.grey[400], size: 50))
-              : null,
-          ),
-          
-          // Info Section
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
               children: [
-                // Restaurant Logo Picture
+                // Banner Image (Restaurant Picture)
                 Container(
-                  width: 50, height: 50,
+                  height: 160,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFFFF512F).withValues(alpha: 0.1),
-                    image: profileImage != null && profileImage.toString().isNotEmpty
-                      ? DecorationImage(
-                          image: NetworkImage(profileImage.toString().startsWith('http') 
-                              ? profileImage.toString() 
-                              : "${ApiService.baseUrl}$profileImage"),
-                          fit: BoxFit.cover,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                    color: Colors.grey[200],
+                    image:
+                        bannerImage != null && bannerImage.toString().isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(
+                              bannerImage.toString().startsWith('http')
+                                  ? bannerImage.toString()
+                                  : ApiService.resolveImageUrl(bannerImage),
+                            ),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: bannerImage == null || bannerImage.toString().isEmpty
+                      ? Center(
+                          child: Icon(
+                            Icons.restaurant,
+                            color: Colors.grey[400],
+                            size: 50,
+                          ),
                         )
                       : null,
-                  ),
-                  child: profileImage == null || profileImage.toString().isEmpty
-                    ? Center(child: Text(
-                        (provider['username'] ?? 'C').toString()[0].toUpperCase(),
-                        style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: const Color(0xFFFF512F)),
-                      ))
-                    : null,
                 ),
-                const SizedBox(width: 14),
-                
-                Expanded(
-                  child: Column(
+
+                // Info Section
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(provider['username']?.toString() ?? provider['firstName']?.toString() ?? 'Restaurant',
-                              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                              maxLines: 1, overflow: TextOverflow.ellipsis),
-                          ),
-                          if (verified) ...[
-                            const SizedBox(width: 4),
-                            const Icon(Icons.verified, color: Colors.blue, size: 16),
-                          ]
-                        ],
+                      // Restaurant Logo Picture
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: const Color(0xFFFF512F).withValues(alpha: 0.1),
+                          image:
+                              profileImage != null &&
+                                  profileImage.toString().isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(
+                                    profileImage.toString().startsWith('http')
+                                        ? profileImage.toString()
+                                        : ApiService.resolveImageUrl(
+                                            profileImage,
+                                          ),
+                                  ),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child:
+                            profileImage == null ||
+                                profileImage.toString().isEmpty
+                            ? Center(
+                                child: Text(
+                                  (provider['username'] ?? 'C')
+                                      .toString()[0]
+                                      .toUpperCase(),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFFFF512F),
+                                  ),
+                                ),
+                              )
+                            : null,
                       ),
-                      const SizedBox(height: 4),
-                      Text(cuisines, style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      const SizedBox(height: 10),
-                      
-                      Row(
-                        children: [
-                          Icon(Icons.star_rounded, color: Colors.amber, size: 18),
-                          const SizedBox(width: 4),
-                          Text(rating, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
-                          const SizedBox(width: 16),
-                          Icon(Icons.schedule, color: Colors.grey[500], size: 16),
-                          const SizedBox(width: 4),
-                          Text(time, style: GoogleFonts.inter(fontSize: 13, color: Colors.grey[700])),
-                        ],
+                      const SizedBox(width: 14),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    provider['username']?.toString() ??
+                                        provider['firstName']?.toString() ??
+                                        'Restaurant',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (verified) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.verified,
+                                    color: Colors.blue,
+                                    size: 16,
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              cuisines,
+                              style: GoogleFonts.inter(
+                                fontSize: 13,
+                                color: Colors.grey[600],
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 10),
+
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.star_rounded,
+                                  color: Colors.amber,
+                                  size: 18,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  rating,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Icon(
+                                  Icons.schedule,
+                                  color: Colors.grey[500],
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  time,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    color: Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -455,9 +586,9 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
-        ]),
-      ),
-    ).animate().fadeIn(delay: (index * 80).ms, duration: 400.ms)
+        )
+        .animate()
+        .fadeIn(delay: (index * 80).ms, duration: 400.ms)
         .slideY(begin: 0.15, end: 0, curve: Curves.easeOutCubic);
   }
 
@@ -473,42 +604,76 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
       physics: const BouncingScrollPhysics(),
       slivers: [
         SliverAppBar(
-          expandedHeight: 240, pinned: true,
+          expandedHeight: 240,
+          pinned: true,
           backgroundColor: const Color(0xFFFF512F),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
             onPressed: () => _safeSetState(() => showProviderDetails = false),
           ),
           actions: [
-            IconButton(icon: const Icon(Icons.chat_outlined, color: Colors.white),
-              onPressed: () => _startChatWithProvider()),
+            IconButton(
+              icon: const Icon(Icons.chat_outlined, color: Colors.white),
+              onPressed: () => _startChatWithProvider(),
+            ),
           ],
           flexibleSpace: FlexibleSpaceBar(
             background: Container(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [
-                  Color(0xFFFF512F), Color(0xFFFF9D42), Color(0xFFFFB74D)]),
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFFFF512F),
+                    Color(0xFFFF9D42),
+                    Color(0xFFFFB74D),
+                  ],
+                ),
               ),
               child: Center(
-                child: Column(mainAxisAlignment: MainAxisAlignment.center,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     const SizedBox(height: 40),
-                    CircleAvatar(radius: 40,
+                    CircleAvatar(
+                      radius: 40,
                       backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      child: Text(provName[0].toUpperCase(),
-                        style: GoogleFonts.poppins(fontSize: 32,
-                          fontWeight: FontWeight.bold, color: Colors.white))),
+                      child: Text(
+                        provName[0].toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 12),
-                    Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Text(provName, style: GoogleFonts.poppins(fontSize: 22,
-                        fontWeight: FontWeight.bold, color: Colors.white)),
-                      if (verified) ...[
-                        const SizedBox(width: 6),
-                        const Icon(Icons.verified, color: Colors.blue, size: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          provName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        if (verified) ...[
+                          const SizedBox(width: 6),
+                          const Icon(
+                            Icons.verified,
+                            color: Colors.blue,
+                            size: 20,
+                          ),
+                        ],
                       ],
-                    ]),
-                    Text(provCity, style: GoogleFonts.inter(
-                      fontSize: 14, color: Colors.white70)),
+                    ),
+                    Text(
+                      provCity,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -520,54 +685,103 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
           child: Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-            decoration: BoxDecoration(color: Colors.white,
+            decoration: BoxDecoration(
+              color: Colors.white,
               borderRadius: BorderRadius.circular(20),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 12)]),
-            child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _statCol(Icons.star_rounded, rating, 'Rating', Colors.amber),
                 _divider(),
-                _statCol(Icons.restaurant_menu, '${meals.length}', 'Meals',
-                  const Color(0xFFFF512F)),
+                _statCol(
+                  Icons.restaurant_menu,
+                  '${meals.length}',
+                  'Meals',
+                  const Color(0xFFFF512F),
+                ),
                 _divider(),
-                _statCol(Icons.timer_outlined,
-                  selectedProvider?['deliveryTime'] ?? '30m', 'Delivery',
-                  Colors.blue),
-              ]),
+                _statCol(
+                  Icons.timer_outlined,
+                  selectedProvider?['deliveryTime'] ?? '30m',
+                  'Delivery',
+                  Colors.blue,
+                ),
+              ],
+            ),
           ).animate().fadeIn().slideY(begin: 0.1),
         ),
         // Action buttons
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(children: [
-              Expanded(child: _actionBtn(Icons.chat_bubble_outline, 'Chat',
-                const Color(0xFF2196F3), _startChatWithProvider)),
-              const SizedBox(width: 10),
-              Expanded(child: _actionBtn(Icons.phone_outlined, 'Call',
-                Colors.green, () {})),
-              const SizedBox(width: 10),
-              Expanded(child: _actionBtn(Icons.share_outlined, 'Share',
-                Colors.purple, () {})),
-            ]),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _actionBtn(
+                    Icons.chat_bubble_outline,
+                    'Chat',
+                    const Color(0xFF2196F3),
+                    _startChatWithProvider,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _actionBtn(
+                    Icons.phone_outlined,
+                    'Call',
+                    Colors.green,
+                    () {},
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _actionBtn(
+                    Icons.share_outlined,
+                    'Share',
+                    Colors.purple,
+                    () {},
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         // Menu header
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
-            child: Row(children: [
-              Container(width: 4, height: 24,
-                decoration: BoxDecoration(color: const Color(0xFFFF512F),
-                  borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 10),
-              Text('Menu', style: GoogleFonts.poppins(fontSize: 20,
-                fontWeight: FontWeight.bold)),
-              const Spacer(),
-              Text('${meals.length} items', style: GoogleFonts.inter(
-                fontSize: 13, color: Colors.grey)),
-            ]),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF512F),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Menu',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${meals.length} items',
+                  style: GoogleFonts.inter(fontSize: 13, color: Colors.grey),
+                ),
+              ],
+            ),
           ),
         ),
         // Meals list
@@ -587,22 +801,37 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 28, 20, 8),
-            child: Row(children: [
-              Container(width: 4, height: 24,
-                decoration: BoxDecoration(color: const Color(0xFFFF512F),
-                  borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 10),
-              Text('Reviews', style: GoogleFonts.poppins(fontSize: 20,
-                fontWeight: FontWeight.bold)),
-            ]),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF512F),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Reviews',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
           sliver: SliverToBoxAdapter(
             child: ReviewListWidget(
-              spId: selectedProvider?['serviceProviderId'] ??
-                  selectedProvider?['_id'] ?? ''),
+              spId:
+                  selectedProvider?['serviceProviderId'] ??
+                  selectedProvider?['_id'] ??
+                  '',
+            ),
           ),
         ),
       ],
@@ -619,91 +848,168 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white,
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04),
-          blurRadius: 10, offset: const Offset(0, 4))],),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: () => _showMealBottomSheet(meal),
         child: Padding(
           padding: const EdgeInsets.all(14),
-          child: Row(children: [
-            // Meal image placeholder
-            Container(
-              width: 85, height: 85,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                gradient: LinearGradient(colors: [
-                  const Color(0xFFFF9D42).withValues(alpha: 0.15),
-                  const Color(0xFFFF512F).withValues(alpha: 0.1),
-                ]),
-              ),
-              child: Stack(children: [
-                Center(child: Icon(Icons.lunch_dining,
-                  color: const Color(0xFFFF512F).withValues(alpha: 0.4), size: 36)),
-                if (isVeg)
-                  Positioned(top: 6, left: 6,
-                    child: Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(color: Colors.green,
-                        borderRadius: BorderRadius.circular(4)),
-                      child: const Icon(Icons.eco, color: Colors.white, size: 10),
-                    )),
-              ]),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    Expanded(child: Text(name,
-                      style: GoogleFonts.poppins(fontSize: 15,
-                        fontWeight: FontWeight.w600),
-                      maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    if (mealType.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF9D42).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8)),
-                        child: Text(mealType, style: GoogleFonts.inter(
-                          fontSize: 10, fontWeight: FontWeight.w600,
-                          color: const Color(0xFFFF512F))),
-                      ),
-                  ]),
-                  const SizedBox(height: 4),
-                  Text(desc, style: GoogleFonts.inter(fontSize: 12,
-                    color: Colors.grey[600], height: 1.3),
-                    maxLines: 2, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    Text('PKR $price', style: GoogleFonts.poppins(
-                      fontSize: 16, fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2E7D32))),
-                    const Spacer(),
-                    if (prepTime.isNotEmpty) ...[
-                      Icon(Icons.timer_outlined, size: 14,
-                        color: Colors.grey[400]),
-                      const SizedBox(width: 4),
-                      Text(prepTime, style: GoogleFonts.inter(
-                        fontSize: 11, color: Colors.grey[500])),
-                      const SizedBox(width: 12),
+          child: Row(
+            children: [
+              // Meal image placeholder
+              Container(
+                width: 85,
+                height: 85,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFFFF9D42).withValues(alpha: 0.15),
+                      const Color(0xFFFF512F).withValues(alpha: 0.1),
                     ],
-                    GestureDetector(
-                      onTap: () => _addToCart(meal),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFF512F),
-                          borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.add, color: Colors.white, size: 20),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Icon(
+                        Icons.lunch_dining,
+                        color: const Color(0xFFFF512F).withValues(alpha: 0.4),
+                        size: 36,
                       ),
                     ),
-                  ]),
-                ]),
-            ),
-          ]),
+                    if (isVeg)
+                      Positioned(
+                        top: 6,
+                        left: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Icon(
+                            Icons.eco,
+                            color: Colors.white,
+                            size: 10,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: GoogleFonts.poppins(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (mealType.isNotEmpty)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFFF9D42,
+                              ).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              mealType,
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFFFF512F),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      desc,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Text(
+                          'PKR $price',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF2E7D32),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (prepTime.isNotEmpty) ...[
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 14,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            prepTime,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              color: Colors.grey[500],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        GestureDetector(
+                          onTap: () => _addToCart(meal),
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF512F),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ).animate().fadeIn(delay: (index * 60).ms).slideX(begin: 0.08, end: 0);
@@ -733,99 +1039,192 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
             color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
           ),
-          child: ListView(controller: controller, padding: EdgeInsets.zero,
+          child: ListView(
+            controller: controller,
+            padding: EdgeInsets.zero,
             children: [
               // Handle
-              Center(child: Container(margin: const EdgeInsets.only(top: 12),
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2)))),
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
               // Image area
               Container(
                 height: 180,
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  gradient: const LinearGradient(colors: [
-                    Color(0xFFFF9D42), Color(0xFFFF512F)]),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF9D42), Color(0xFFFF512F)],
+                  ),
                 ),
-                child: Center(child: Icon(Icons.fastfood_rounded,
-                  color: Colors.white.withValues(alpha: 0.3), size: 64)),
+                child: Center(
+                  child: Icon(
+                    Icons.fastfood_rounded,
+                    color: Colors.white.withValues(alpha: 0.3),
+                    size: 64,
+                  ),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [
-                      Expanded(child: Text(name, style: GoogleFonts.poppins(
-                        fontSize: 24, fontWeight: FontWeight.bold))),
-                      if (isVeg)
-                        Container(padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8)),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            const Icon(Icons.eco, color: Colors.green, size: 14),
-                            const SizedBox(width: 4),
-                            Text('Veg', style: GoogleFonts.inter(
-                              fontSize: 12, color: Colors.green,
-                              fontWeight: FontWeight.w600)),
-                          ])),
-                    ]),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            name,
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        if (isVeg)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.eco,
+                                  color: Colors.green,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Veg',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 6),
                     // Tags
-                    Wrap(spacing: 8, children: [
-                      if (mealType.isNotEmpty)
-                        _tag(mealType, Icons.lunch_dining),
-                      if (cuisineType.isNotEmpty)
-                        _tag(cuisineType, Icons.public),
-                      _tag(prepTime, Icons.timer_outlined),
-                    ]),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        if (mealType.isNotEmpty)
+                          _tag(mealType, Icons.lunch_dining),
+                        if (cuisineType.isNotEmpty)
+                          _tag(cuisineType, Icons.public),
+                        _tag(prepTime, Icons.timer_outlined),
+                      ],
+                    ),
                     const SizedBox(height: 16),
-                    Text(desc, style: GoogleFonts.inter(fontSize: 15,
-                      color: Colors.grey[700], height: 1.5)),
+                    Text(
+                      desc,
+                      style: GoogleFonts.inter(
+                        fontSize: 15,
+                        color: Colors.grey[700],
+                        height: 1.5,
+                      ),
+                    ),
                     if (ingredients.isNotEmpty) ...[
                       const SizedBox(height: 20),
-                      Text('Ingredients', style: GoogleFonts.poppins(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
+                      Text(
+                        'Ingredients',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 8),
-                      Wrap(spacing: 8, runSpacing: 8,
-                        children: ingredients.map((i) => Chip(
-                          label: Text(i.toString(), style: GoogleFonts.inter(
-                            fontSize: 12)),
-                          backgroundColor: Colors.grey[100],
-                        )).toList()),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: ingredients
+                            .map(
+                              (i) => Chip(
+                                label: Text(
+                                  i.toString(),
+                                  style: GoogleFonts.inter(fontSize: 12),
+                                ),
+                                backgroundColor: Colors.grey[100],
+                              ),
+                            )
+                            .toList(),
+                      ),
                     ],
                     const SizedBox(height: 24),
                     // Price + Add to Cart
-                    Row(children: [
-                      Column(crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Price', style: GoogleFonts.inter(
-                            fontSize: 12, color: Colors.grey)),
-                          Text('PKR $price', style: GoogleFonts.poppins(
-                            fontSize: 28, fontWeight: FontWeight.bold,
-                            color: const Color(0xFF2E7D32))),
-                        ]),
-                      const Spacer(),
-                      ElevatedButton.icon(
-                        onPressed: () { _addToCart(meal); Navigator.pop(context); },
-                        icon: const Icon(Icons.add_shopping_cart, size: 20),
-                        label: Text('Add to Cart',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF512F),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16))),
-                      ),
-                    ]),
+                    Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Price',
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Text(
+                              'PKR $price',
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            _addToCart(meal);
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.add_shopping_cart, size: 20),
+                          label: Text(
+                            'Add to Cart',
+                            style: GoogleFonts.poppins(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF512F),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 14,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 32),
-                  ]),
+                  ],
+                ),
               ),
-            ]),
+            ],
+          ),
         ),
       ),
     );
@@ -834,116 +1233,192 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
   Widget _tag(String text, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(8)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 14, color: Colors.grey[600]),
-        const SizedBox(width: 4),
-        Text(text, style: GoogleFonts.inter(fontSize: 12,
-          color: Colors.grey[700], fontWeight: FontWeight.w500)),
-      ]),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.grey[600]),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.grey[700],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   // ─── CART FAB ───
   Widget _buildCartFAB() {
     final total = cartItems.fold<double>(
-      0, (sum, i) => sum + (double.tryParse(i['price'].toString()) ?? 0));
+      0,
+      (sum, i) => sum + (double.tryParse(i['price'].toString()) ?? 0),
+    );
     return FloatingActionButton.extended(
       onPressed: _showCartSheet,
       backgroundColor: const Color(0xFFFF512F),
       icon: Badge(
-        label: Text('${cartItems.length}',
-          style: const TextStyle(fontSize: 10, color: Colors.white)),
+        label: Text(
+          '${cartItems.length}',
+          style: const TextStyle(fontSize: 10, color: Colors.white),
+        ),
         child: const Icon(Icons.shopping_cart, color: Colors.white),
       ),
-      label: Text('PKR ${total.toStringAsFixed(0)}',
-        style: GoogleFonts.poppins(fontWeight: FontWeight.bold,
-          color: Colors.white)),
+      label: Text(
+        'PKR ${total.toStringAsFixed(0)}',
+        style: GoogleFonts.poppins(
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
     ).animate().slideY(begin: 1, end: 0).fadeIn();
   }
 
-
   void _showCartSheet() {
     final total = cartItems.fold<double>(
-      0, (sum, i) => sum + (double.tryParse(i['price'].toString()) ?? 0));
+      0,
+      (sum, i) => sum + (double.tryParse(i['price'].toString()) ?? 0),
+    );
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         height: MediaQuery.of(context).size.height * 0.65,
-        child: Column(children: [
-          Row(children: [
-            Text('Your Order', style: GoogleFonts.poppins(
-              fontSize: 20, fontWeight: FontWeight.bold)),
-            const Spacer(),
-            TextButton(onPressed: () async {
-              await ApiService.clearCart();
-              _safeSetState(() => cartItems.clear());
-              if (context.mounted) Navigator.pop(context);
-            }, child: Text('Clear All', style: GoogleFonts.inter(
-              color: Colors.red))),
-          ]),
-          const SizedBox(height: 16),
-          Expanded(
-            child: ListView.separated(
-              itemCount: cartItems.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (_, i) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Container(
-                  width: 48, height: 48,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF9D42).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12)),
-                  child: const Icon(Icons.lunch_dining,
-                    color: Color(0xFFFF512F)),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Text(
+                  'Your Order',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                title: Text(cartItems[i]['name'],
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                subtitle: Text('by ${cartItems[i]['providerName']}',
-                  style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
-                trailing: Text('PKR ${cartItems[i]['price']}',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.bold,
-                    color: const Color(0xFF2E7D32))),
+                const Spacer(),
+                TextButton(
+                  onPressed: () async {
+                    await ApiService.clearCart();
+                    _safeSetState(() => cartItems.clear());
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: Text(
+                    'Clear All',
+                    style: GoogleFonts.inter(color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView.separated(
+                itemCount: cartItems.length,
+                separatorBuilder: (context, index) => const Divider(height: 1),
+                itemBuilder: (_, i) => ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF9D42).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.lunch_dining,
+                      color: Color(0xFFFF512F),
+                    ),
+                  ),
+                  title: Text(
+                    cartItems[i]['name'],
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(
+                    'by ${cartItems[i]['providerName']}',
+                    style: GoogleFonts.inter(fontSize: 12, color: Colors.grey),
+                  ),
+                  trailing: Text(
+                    'PKR ${cartItems[i]['price']}',
+                    style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2E7D32),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Row(children: [
-              Text('Total', style: GoogleFonts.poppins(
-                fontSize: 18, fontWeight: FontWeight.bold)),
-              const Spacer(),
-              Text('PKR ${total.toStringAsFixed(0)}',
-                style: GoogleFonts.poppins(fontSize: 20,
-                  fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
-            ]),
-          ),
-          SizedBox(width: double.infinity, height: 56,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/checkout', arguments: {
-                  'cartItems': cartItems,
-                  'provider': selectedProvider ?? {
-                    '_id': cartItems[0]['providerId'],
-                    'username': cartItems[0]['providerName']},
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF512F),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16))),
-              child: Text('Proceed to Checkout',
-                style: GoogleFonts.poppins(fontSize: 16,
-                  fontWeight: FontWeight.bold, color: Colors.white)),
-            )),
-        ]),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                children: [
+                  Text(
+                    'Total',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'PKR ${total.toStringAsFixed(0)}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2E7D32),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(
+                    context,
+                    '/checkout',
+                    arguments: {
+                      'cartItems': cartItems,
+                      'provider':
+                          selectedProvider ??
+                          {
+                            '_id': cartItems[0]['providerId'],
+                            'username': cartItems[0]['providerName'],
+                          },
+                    },
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF512F),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  'Proceed to Checkout',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -955,13 +1430,17 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
     try {
       final result = await ApiService.startChat(providerId, providerId);
       if (result['success'] == true && mounted) {
-        Navigator.pushNamed(context, '/chat', arguments: {
-          'chatId': result['chat']['_id'],
-          'otherUserName': selectedProvider['username'] ?? 'Chef',
-          'otherUserImage': selectedProvider['profileImage'] ?? '',
-          'serviceName': 'Meal Service',
-          'receiverId': providerId,
-        });
+        Navigator.pushNamed(
+          context,
+          '/chat',
+          arguments: {
+            'chatId': result['chat']['_id'],
+            'otherUserName': selectedProvider['username'] ?? 'Chef',
+            'otherUserImage': selectedProvider['profileImage'] ?? '',
+            'serviceName': 'Meal Service',
+            'receiverId': providerId,
+          },
+        );
       } else {
         _showSnack('Failed to start chat', Colors.red);
       }
@@ -972,101 +1451,143 @@ class _MealScreenState extends State<MealScreen> with TickerProviderStateMixin {
 
   // ─── HELPERS ───
   Widget _statCol(IconData icon, String val, String label, Color color) {
-    return Column(children: [
-      Icon(icon, color: color, size: 22),
-      const SizedBox(height: 6),
-      Text(val, style: GoogleFonts.poppins(fontSize: 16,
-        fontWeight: FontWeight.bold)),
-      Text(label, style: GoogleFonts.inter(fontSize: 11,
-        color: Colors.grey[500])),
-    ]);
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 6),
+        Text(
+          val,
+          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 11, color: Colors.grey[500]),
+        ),
+      ],
+    );
   }
 
-  Widget _divider() => Container(width: 1, height: 40,
-    color: Colors.grey[200]);
+  Widget _divider() => Container(width: 1, height: 40, color: Colors.grey[200]);
 
-  Widget _actionBtn(IconData icon, String label, Color color,
-      VoidCallback onTap) {
+  Widget _actionBtn(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(14)),
-        child: Column(children: [
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 4),
-          Text(label, style: GoogleFonts.inter(fontSize: 12,
-            color: color, fontWeight: FontWeight.w600)),
-        ]),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.no_meals_outlined, size: 64,
-          color: Colors.grey[300]),
-        const SizedBox(height: 16),
-        Text('No meal providers found',
-          style: GoogleFonts.poppins(fontSize: 18,
-            fontWeight: FontWeight.w600, color: Colors.grey[400])),
-        const SizedBox(height: 8),
-        Text('Try changing your filter or check back later',
-          style: GoogleFonts.inter(color: Colors.grey[400])),
-        const SizedBox(height: 24),
-        TextButton.icon(
-          onPressed: () {
-            _safeSetState(() => _selectedFilter = 'All');
-            _loadAllMealProviders();
-          },
-          icon: const Icon(Icons.refresh),
-          label: const Text('Reset Filters'),
-        ),
-      ],
-    ));
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.no_meals_outlined, size: 64, color: Colors.grey[300]),
+          const SizedBox(height: 16),
+          Text(
+            'No meal providers found',
+            style: GoogleFonts.poppins(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey[400],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Try changing your filter or check back later',
+            style: GoogleFonts.inter(color: Colors.grey[400]),
+          ),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            onPressed: () {
+              _safeSetState(() => _selectedFilter = 'All');
+              _loadAllMealProviders();
+            },
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reset Filters'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildEmptyMenuState() {
     return Padding(
       padding: const EdgeInsets.all(40),
-      child: Center(child: Column(children: [
-        Icon(Icons.menu_book_outlined, size: 48, color: Colors.grey[300]),
-        const SizedBox(height: 12),
-        Text('Menu coming soon',
-          style: GoogleFonts.inter(color: Colors.grey)),
-      ])),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.menu_book_outlined, size: 48, color: Colors.grey[300]),
+            const SizedBox(height: 12),
+            Text(
+              'Menu coming soon',
+              style: GoogleFonts.inter(color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildShimmerLoading() {
     return Padding(
       padding: const EdgeInsets.all(20),
-      child: Column(children: [
-        const SizedBox(height: 80),
-        ...List.generate(4, (i) => Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          height: 180,
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(20)),
-        ).animate(onPlay: (c) => c.repeat())
-            .shimmer(duration: 1200.ms, color: Colors.grey[100])),
-      ]),
+      child: Column(
+        children: [
+          const SizedBox(height: 80),
+          ...List.generate(
+            4,
+            (i) =>
+                Container(
+                      margin: const EdgeInsets.only(bottom: 16),
+                      height: 180,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    )
+                    .animate(onPlay: (c) => c.repeat())
+                    .shimmer(duration: 1200.ms, color: Colors.grey[100]),
+          ),
+        ],
+      ),
     );
   }
 
   void _showSnack(String msg, Color color) {
     if (!_mounted || !mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: GoogleFonts.inter()),
-      backgroundColor: color,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.all(16),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg, style: GoogleFonts.inter()),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
   }
 }

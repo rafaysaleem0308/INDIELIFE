@@ -1,15 +1,8 @@
-"""
-===============================================================
-🚀 AI Expense Planner - Flask API Backend
-===============================================================
-Connects Jupyter notebook AI model to website via REST API
-Serves meal, laundry, maintenance data from processed datasets
-"""
-
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS
 import json
 import logging
+import os
 from pathlib import Path
 import pandas as pd
 from typing import Dict, List, Optional
@@ -25,7 +18,11 @@ from config import EXCHANGE_RATES as CFG_RATES, CATEGORIES, validate_budget, val
 # CONFIGURATION
 # =========================================================
 app = Flask(__name__)
-CORS(app)  # Enable CORS for web requests
+allowed_origins = os.environ.get("AI_ALLOWED_ORIGINS", "*")
+CORS(
+    app,
+    origins="*" if allowed_origins == "*" else [origin.strip() for origin in allowed_origins.split(",") if origin.strip()],
+)
 
 # Setup logging
 logging.basicConfig(
@@ -80,15 +77,21 @@ def load_trained_models():
     trained_data_file = TRAINED_MODELS_PATH / 'trained_data.json'
     
     if not trained_data_file.exists():
-        logger.warning("⚠️  Trained models not found. Running training pipeline...")
+        auto_train = os.environ.get("AI_AUTO_TRAIN", "false").lower() == "true"
+        if not auto_train:
+            logger.warning("Trained models not found. Set AI_AUTO_TRAIN=true to train during startup.")
+            logger.info("Using fallback hardcoded data.")
+            load_datasets()
+            return
+
+        logger.warning("Trained models not found. Running training pipeline because AI_AUTO_TRAIN=true.")
         try:
-            # Import and run the training pipeline
             from model_trainer import train_all_models
             train_all_models()
-            logger.info("✅ Models trained successfully")
+            logger.info("Models trained successfully")
         except Exception as e:
-            logger.error(f"❌ Training failed: {e}")
-            logger.info("📥 Using fallback hardcoded data...")
+            logger.error(f"Training failed: {e}")
+            logger.info("Using fallback hardcoded data.")
             load_datasets()
             return
     
@@ -752,42 +755,16 @@ def server_error(e):
     return jsonify({'error': 'Internal server error'}), 500
 
 # =========================================================
-# STARTUP
+# STARTUP — runs on both direct execution and gunicorn import
 # =========================================================
+load_trained_models()
 
 if __name__ == '__main__':
-    logger.info("="*60)
-    logger.info("🚀 AI Expense Planner - Flask API Backend")
-    logger.info("="*60)
-    
-    # Load trained models
-    load_trained_models()
-    
-    logger.info("\n📊 Available Endpoints:")
-    logger.info("  GET  /api/health                      - Health check")
-    logger.info("  GET  /api/datasets                    - All datasets")
-    logger.info("  GET  /api/datasets/<category>         - Specific category")
-    logger.info("  POST /api/plan                        - Generate plan")
-    logger.info("  POST /api/analyze                     - Analyze natural language")
-    logger.info("  POST /api/chat-plan                   - Chat-style plan (NLP)")
-    logger.info("  GET  /api/exchange-rates              - Exchange rates")
-    logger.info("  GET  /api/stats                       - Dataset statistics")
-    logger.info("  POST /api/train                       - Train/retrain models")
-    logger.info("  GET  /api/models/status               - Check model status")
-    logger.info("  POST /api/ai-budget-recommendation    - 🆕 Flutter AI Recommendations")
-    
-    logger.info("\n📱 Flutter Integration:")
-    logger.info("  Service: lib/core/services/ai_budget_service.dart")
-    logger.info("  Screen:  lib/features/home/screens/ai_budget_recommendation.dart")
-    logger.info("  Card:    Added to user_home.dart")
-    
-    logger.info("\n🌐 Starting server on http://localhost:5000")
-    logger.info("="*60 + "\n")
-    
-    # Run Flask app
+    port = int(os.environ.get('PORT', 5000))
+    logger.info(f"🌐 Starting server on http://0.0.0.0:{port}")
     app.run(
         host='0.0.0.0',
-        port=5000,
-        debug=True,
-        use_reloader=False  # Prevent duplicate logging
+        port=port,
+        debug=False,
+        use_reloader=False
     )

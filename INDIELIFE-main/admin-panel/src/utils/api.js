@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const ASSET_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '');
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -38,3 +39,10 @@ api.interceptors.response.use(
 );
 
 export default api;
+
+export const resolveAssetUrl = (url) => {
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    return `${ASSET_BASE_URL}${normalizedPath}`;
+};

@@ -419,7 +419,7 @@ class _AddHostelServiceFormState extends State<AddHostelServiceForm> {
     if (_imageFile != null)
       preview = FileImage(_imageFile!);
     else if (_existingImageUrl != null)
-      preview = NetworkImage(ApiService.baseUrl + _existingImageUrl!);
+      preview = NetworkImage(ApiService.resolveImageUrl(_existingImageUrl));
 
     return GestureDetector(
       onTap: _pickImage,

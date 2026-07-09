@@ -112,7 +112,7 @@ const Housing = () => {
     try {
       setActionLoading(true);
       const body = { status };
-      await api.patch(`/api/admin/services/${id}/status`, body);
+      await api.patch(`/admin/services/${id}/status`, body);
       setSnackbar({
         open: true,
         message: `Service ${status} successfully`,

@@ -179,7 +179,7 @@ class _MyChatsScreenState extends State<MyChatsScreen> {
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: Color(0xFF1E293B).withOpacity(0.1),
-                  backgroundImage: otherImage.isNotEmpty ? NetworkImage("${ApiService.baseUrl}$otherImage") : null,
+                  backgroundImage: otherImage.isNotEmpty ? NetworkImage(ApiService.resolveImageUrl(otherImage)) : null,
                   child: otherImage.isEmpty ? Text(
                     otherName[0].toUpperCase(),
                     style: GoogleFonts.poppins(color: Color(0xFF1E293B), fontWeight: FontWeight.bold, fontSize: 20),

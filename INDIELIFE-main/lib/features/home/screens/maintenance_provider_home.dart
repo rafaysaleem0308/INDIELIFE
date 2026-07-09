@@ -972,7 +972,7 @@ class _MaintenanceProviderHomeState extends State<MaintenanceProviderHome>
                             top: Radius.circular(20),
                           ),
                           child: Image.network(
-                            ApiService.baseUrl + imageUrl,
+                            ApiService.resolveImageUrl(imageUrl),
                             height: 130,
                             width: double.infinity,
                             fit: BoxFit.cover,

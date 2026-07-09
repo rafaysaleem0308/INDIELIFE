@@ -1052,7 +1052,7 @@ class _HostelProviderHomeState extends State<HostelProviderHome>
                             top: Radius.circular(20),
                           ),
                           child: Image.network(
-                            ApiService.baseUrl + imageUrl,
+                            ApiService.resolveImageUrl(imageUrl),
                             height: 150,
                             width: double.infinity,
                             fit: BoxFit.cover,

@@ -3,7 +3,14 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
+const fs = require("fs");
 const { Server } = require("socket.io");
+const { validateEnvironment } = require("./utils/env");
+
+validateEnvironment();
+
+// Ensure uploads directory exists (it's gitignored)
+fs.mkdirSync("uploads", { recursive: true });
 
 const { connectDatabase } = require("./config/database");
 const {
@@ -17,8 +24,34 @@ const {
 // ─── Initialize Express App ───────────────────────────────────────────────────
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
 const PORT = process.env.PORT || 3000;
+const allowedOrigins = [
+  process.env.ADMIN_ORIGIN,
+  process.env.MOBILE_ORIGIN,
+  process.env.FRONTEND_ORIGIN,
+  "http://localhost:5173",
+  "http://localhost:3000",
+]
+  .filter(Boolean)
+  .map((origin) => origin.replace(/\/$/, ""));
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+
+    const normalizedOrigin = origin.replace(/\/$/, "");
+    if (allowedOrigins.includes(normalizedOrigin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
+  credentials: true,
+};
+
+const io = new Server(server, { cors: corsOptions });
 
 // ─── CRITICAL: Stripe Webhook Route (must be BEFORE express.json()) ──────────
 // Stripe requires the raw unparsed body to verify webhook signatures
@@ -28,7 +61,7 @@ app.use("/stripe/webhook", webhookRoutes);
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
-app.use(cors());
+app.use(cors(corsOptions));
 
 // ─── SECURITY: Apply Global Rate Limiter ──────────────────────────────────────
 app.use(globalLimiter);

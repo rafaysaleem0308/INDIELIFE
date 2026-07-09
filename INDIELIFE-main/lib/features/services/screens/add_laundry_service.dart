@@ -164,7 +164,7 @@ class _AddLaundryServiceFormState extends State<AddLaundryServiceForm> {
   Widget _buildImagePicker() {
     ImageProvider? preview;
     if (_imageFile != null) preview = FileImage(_imageFile!);
-    else if (_existingImageUrl != null) preview = NetworkImage(ApiService.baseUrl + _existingImageUrl!);
+    else if (_existingImageUrl != null) preview = NetworkImage(ApiService.resolveImageUrl(_existingImageUrl));
 
     return GestureDetector(
       onTap: _pickImage,

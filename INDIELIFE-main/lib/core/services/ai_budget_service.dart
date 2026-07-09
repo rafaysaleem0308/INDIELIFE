@@ -6,12 +6,18 @@ import 'dart:io';
 
 /// Service to interact with Flask AI Budget Recommendation API
 class AIBudgetService {
+  static const String _configuredAIBaseUrl = String.fromEnvironment(
+    'AI_BASE_URL',
+  );
+
   static String get flaskBaseUrl {
+    if (_configuredAIBaseUrl.isNotEmpty) {
+      return _configuredAIBaseUrl.replaceAll(RegExp(r'/$'), '');
+    }
+
     if (Platform.isAndroid) {
-      // Android Emulator: 10.0.2.2 = host's localhost
       return "http://10.0.2.2:5000";
     }
-    // Fallback for iOS Simulator or Desktop (localhost)
     return "http://localhost:5000";
   }
 

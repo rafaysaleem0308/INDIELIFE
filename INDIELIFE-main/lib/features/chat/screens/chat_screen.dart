@@ -178,7 +178,7 @@ class _ChatScreenState extends State<ChatScreen> {
               radius: 18,
               backgroundColor: Color(0xFF1E293B).withOpacity(0.1),
               backgroundImage: widget.otherUserImage.isNotEmpty 
-                  ? NetworkImage("${ApiService.baseUrl}${widget.otherUserImage}") 
+                  ? NetworkImage(ApiService.resolveImageUrl(widget.otherUserImage)) 
                   : null,
               child: widget.otherUserImage.isEmpty ? Text(
                 widget.otherUserName[0].toUpperCase(),

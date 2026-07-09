@@ -1,0 +1,68 @@
+services:
+  # Node.js backend API
+  - type: web
+    name: indielife-backend
+    env: node
+    rootDir: INDIELIFE-main/backend
+    buildCommand: npm ci
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: ADMIN_EMAIL
+        value: admin@gmail.com
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_ORIGIN
+        sync: false
+      - key: MOBILE_ORIGIN
+        sync: false
+      - key: FRONTEND_ORIGIN
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_PHONE_NUMBER
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: PLATFORM_COMMISSION_PERCENT
+        value: "10"
+
+  # Python / Flask AI model API
+  - type: web
+    name: indielife-ai-model
+    env: python
+    rootDir: "Ai model fyp"
+    buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
+    startCommand: gunicorn app:app
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: AI_ALLOWED_ORIGINS
+        sync: false
+      - key: AI_AUTO_TRAIN
+        value: "false"

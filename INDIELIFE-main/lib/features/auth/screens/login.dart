@@ -237,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen>
                     radius: 24,
                     backgroundColor: const Color(0xFFFF9D42),
                     backgroundImage: profileImage.isNotEmpty
-                        ? NetworkImage('${ApiService.baseUrl}/$profileImage')
+                        ? NetworkImage(ApiService.resolveImageUrl(profileImage))
                         : null,
                     child: profileImage.isEmpty
                         ? Text(

@@ -1,6 +1,11 @@
 const jwt = require("jsonwebtoken");
+const { isProduction } = require("../utils/env");
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? undefined : "dev_jwt_secret_change_me");
+
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET is required");
+}
 
 /**
  * Verify JWT token middleware

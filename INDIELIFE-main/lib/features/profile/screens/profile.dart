@@ -349,7 +349,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } else if (userData?['profileImage'] != null &&
         userData!['profileImage'].toString().isNotEmpty) {
       imageProvider = NetworkImage(
-        ApiService.baseUrl + userData!['profileImage'],
+        ApiService.resolveImageUrl(userData!['profileImage']),
       );
     }
 

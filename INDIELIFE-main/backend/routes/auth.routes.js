@@ -5,8 +5,12 @@ const crypto = require("crypto");
 const RefreshToken = require("../models/refresh-token.model");
 const User = require("../models/user.model");
 const ServiceProvider = require("../models/service-provider.model");
+const { isProduction } = require("../utils/env");
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret";
+const JWT_SECRET = process.env.JWT_SECRET || (isProduction ? undefined : "dev_jwt_secret_change_me");
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is required");
+}
 const ACCESS_TOKEN_EXPIRY = "1d"; // Short-lived access token
 const REFRESH_TOKEN_EXPIRY_DAYS = 30; // Long-lived refresh token
 

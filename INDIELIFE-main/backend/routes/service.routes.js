@@ -4,9 +4,7 @@ const Service = require("../models/service.model");
 const ServiceProvider = require("../models/service-provider.model");
 const User = require("../models/user.model");
 const { verifyToken } = require("../middleware/auth");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const { createUpload, getUploadedFileUrl } = require("../utils/upload");
 
 // ─── VALIDATION & SANITIZATION ────────────────────────────────────────────
 const {
@@ -15,15 +13,7 @@ const {
   sanitizeHtmlContent,
 } = require("../utils/validators");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, "service-" + Date.now() + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage });
+const upload = createUpload("Indielife/services", "service");
 
 // POST /api/services/:id/upload-image
 router.post(
@@ -37,7 +27,7 @@ router.post(
         return res
           .status(400)
           .json({ success: false, message: "No image provided" });
-      const imageUrl = "/uploads/" + req.file.filename;
+      const imageUrl = getUploadedFileUrl(req.file);
       const service = await Service.findByIdAndUpdate(
         id,
         { imageUrl },

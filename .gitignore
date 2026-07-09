@@ -32,15 +32,22 @@ AI_FLUTTER_INTEGRATION_SUMMARY.md
 **/.pub-cache/
 **/.pub/
 **/build/
+**/dist/
 **/coverage/
+**/.gradle/
+**/.kotlin/
 **/.env
 **/.env.*
 !**/.env.example
 **/node_modules/
 **/uploads/
 **/mongo_data/
+**/mongo_data_backup/
 *.log
 **/.gemini/
+
+# Local duplicate workspace copy
+Indielife/
 
 # Symbolication related
 app.*.symbols

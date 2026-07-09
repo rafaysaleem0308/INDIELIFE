@@ -22,20 +22,9 @@ const {
   validatePhone,
   sanitizeString,
 } = require("../utils/validators");
+const { createUpload, getUploadedFileUrl } = require("../utils/upload");
 
-const multer = require("multer");
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(
-      null,
-      "profile-sp-" + Date.now() + "-" + file.originalname.replace(/\s+/g, "-"),
-    );
-  },
-});
-const upload = multer({ storage: storage });
+const upload = createUpload("Indielife/providers", "profile-sp");
 
 // Store OTP verification status temporarily
 
@@ -570,7 +559,7 @@ router.post(
           .json({ success: false, message: "No image file provided" });
       }
 
-      const imageUrl = "/uploads/" + req.file.filename;
+      const imageUrl = getUploadedFileUrl(req.file);
 
       const sp = await ServiceProvider.findByIdAndUpdate(
         spId,
