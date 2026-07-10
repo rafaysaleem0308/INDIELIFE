@@ -1,24 +1,67 @@
 // module.exports = router;
 const express = require("express");
 const router = express.Router();
-const { Resend } = require("resend");
 const bcrypt = require("bcrypt");
 const User = require("../models/user.model");
 const ServiceProvider = require("../models/service-provider.model");
 const Otp = require("../models/otp.model");
 
-// Configure Resend (uses HTTPS, works on Render free tier unlike Gmail SMTP)
-const resend = new Resend(process.env.RESEND_API_KEY);
+const https = require("https");
 
 async function sendMailWithTimeout(mailOptions) {
-  const { data, error } = await resend.emails.send({
-    from: "IndieLife <onboarding@resend.dev>",
-    to: [mailOptions.to],
-    subject: mailOptions.subject,
-    html: mailOptions.html,
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({
+      sender: {
+        name: "IndieLife",
+        email: "isfarakbar94@gmail.com"
+      },
+      to: [
+        {
+          email: mailOptions.to
+        }
+      ],
+      subject: mailOptions.subject,
+      htmlContent: mailOptions.html
+    });
+
+    const options = {
+      hostname: "api.brevo.com",
+      port: 443,
+      path: "/v3/smtp/email",
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "api-key": process.env.BREVO_API_KEY,
+        "content-type": "application/json",
+        "content-length": Buffer.byteLength(postData)
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = "";
+      res.on("data", (chunk) => {
+        body += chunk;
+      });
+      res.on("end", () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            resolve(JSON.parse(body));
+          } catch (e) {
+            resolve({ success: true });
+          }
+        } else {
+          reject(new Error(`Brevo API returned status ${res.statusCode}: ${body}`));
+        }
+      });
+    });
+
+    req.on("error", (e) => {
+      reject(e);
+    });
+
+    req.write(postData);
+    req.end();
   });
-  if (error) throw new Error(error.message || "Resend email failed");
-  return data;
 }
 
 // ================================
