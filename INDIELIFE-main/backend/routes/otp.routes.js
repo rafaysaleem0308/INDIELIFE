@@ -1,34 +1,24 @@
 // module.exports = router;
 const express = require("express");
 const router = express.Router();
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 const bcrypt = require("bcrypt");
 const User = require("../models/user.model");
 const ServiceProvider = require("../models/service-provider.model");
 const Otp = require("../models/otp.model");
 
-const emailUser = process.env.EMAIL_USER;
-const emailPass = process.env.EMAIL_PASS?.replace(/\s+/g, "");
+// Configure Resend (uses HTTPS, works on Render free tier unlike Gmail SMTP)
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Configure nodemailer
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 15000,
-  auth: {
-    user: emailUser,
-    pass: emailPass,
-  },
-});
-
-function sendMailWithTimeout(mailOptions, timeoutMs = 15000) {
-  return Promise.race([
-    transporter.sendMail(mailOptions),
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("OTP email send timed out")), timeoutMs),
-    ),
-  ]);
+async function sendMailWithTimeout(mailOptions) {
+  const { data, error } = await resend.emails.send({
+    from: "IndieLife <onboarding@resend.dev>",
+    to: [mailOptions.to],
+    subject: mailOptions.subject,
+    html: mailOptions.html,
+  });
+  if (error) throw new Error(error.message || "Resend email failed");
+  return data;
 }
 
 // ================================
@@ -383,7 +373,7 @@ router.post("/send-otp", async (req, res) => {
   `,
     };
 
-    await transporter.sendMail(mailOptions);
+    await sendMailWithTimeout(mailOptions);
 
     console.log("Password reset OTP sent successfully to:", normalizedEmail);
 
