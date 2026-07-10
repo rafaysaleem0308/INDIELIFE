@@ -6,20 +6,10 @@ import 'dart:io';
 
 /// Service to interact with Flask AI Budget Recommendation API
 class AIBudgetService {
-  static const String _configuredAIBaseUrl = String.fromEnvironment(
-    'AI_BASE_URL',
-  );
+  static const String _configuredAIBaseUrl =
+      'https://indielife-ai-model.onrender.com';
 
-  static String get flaskBaseUrl {
-    if (_configuredAIBaseUrl.isNotEmpty) {
-      return _configuredAIBaseUrl.replaceAll(RegExp(r'/$'), '');
-    }
-
-    if (Platform.isAndroid) {
-      return "http://10.0.2.2:5000";
-    }
-    return "http://localhost:5000";
-  }
+  static String get flaskBaseUrl => _configuredAIBaseUrl;
 
   /// Get AI budget recommendation based on budget, days, and category
   static Future<Map<String, dynamic>> getAIRecommendation({

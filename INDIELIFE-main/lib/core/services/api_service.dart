@@ -47,20 +47,10 @@ class ApiResponse {
 }
 
 class ApiService {
-  static const String _configuredBaseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-  );
+  static const String _configuredBaseUrl =
+      'https://indielife-backend.onrender.com';
 
-  static String get baseUrl {
-    if (_configuredBaseUrl.isNotEmpty) {
-      return _configuredBaseUrl.replaceAll(RegExp(r'/$'), '');
-    }
-
-    if (Platform.isAndroid) {
-      return "http://10.0.2.2:3000";
-    }
-    return "http://localhost:3000";
-  }
+  static String get baseUrl => _configuredBaseUrl;
 
   static String resolveImageUrl(String? imageUrl) {
     if (imageUrl == null || imageUrl.trim().isEmpty) return '';

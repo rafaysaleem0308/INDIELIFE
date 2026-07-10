@@ -57,16 +57,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SOSService().initialize();
 
-  // Check device location on app startup
-  await LocationService.getCurrentLocation();
-
-  // Verify Stripe Key exists
-  if (StripeConfig.publishableKey.isEmpty ||
-      !StripeConfig.publishableKey.startsWith('pk_')) {
-    throw Exception(
-      'Stripe Publishable Key is missing or invalid. Please check lib/core/constants/stripe_config.dart',
-    );
-  }
+  // Check device location on app startup (with timeout to avoid freezing)
+  await LocationService.getCurrentLocation().timeout(
+    const Duration(seconds: 5),
+    onTimeout: () => null,
+  );
 
   Stripe.publishableKey = StripeConfig.publishableKey;
   await Stripe.instance.applySettings();
